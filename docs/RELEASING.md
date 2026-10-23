@@ -18,8 +18,9 @@ git pull --ff-only
 git status
 ```
 
-Update the version in both `pyproject.toml` and `tlock/__init__.py`, then run the
-same checks expected by CI and the release workflow:
+Update the version in both `pyproject.toml` and `tlock/__init__.py` (for example,
+to `0.2.0` for the next release), then run the same checks expected by CI and
+the release workflow:
 
 ```powershell
 python -m pip install -e ".[dev]"
@@ -34,7 +35,7 @@ Commit and push the version change:
 
 ```powershell
 git add pyproject.toml tlock/__init__.py
-git commit -m "release: v0.5.0"
+git commit -m "release: v0.2.0"
 git push origin main
 ```
 
@@ -42,8 +43,8 @@ Wait for CI to pass. Then create and push an annotated tag whose value exactly
 matches the package version:
 
 ```powershell
-git tag -a v0.5.0 -m "Tlock v0.5.0"
-git push origin v0.5.0
+git tag -a v0.2.0 -m "Tlock v0.2.0"
+git push origin v0.2.0
 ```
 
 That tag push starts the Release workflow. Follow it in the repository's
@@ -51,8 +52,8 @@ That tag push starts the Release workflow. Follow it in the repository's
 and source archive under **Releases**. `tlock update --check` discovers the
 latest published release.
 
-For the initial `0.4.0` release, use `v0.4.0` in the two tag commands; no
-version edit is needed if both package files already contain `0.4.0`.
+For the initial `0.1.0` release, use `v0.1.0` in the two tag commands; no
+version edit is needed if both package files already contain `0.1.0`.
 
 ## How GitHub Actions fits together
 

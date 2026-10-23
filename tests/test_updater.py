@@ -28,7 +28,7 @@ def test_latest_release_and_version_comparison(monkeypatch) -> None:
     release = updater.latest_release(timeout=0.1)
 
     assert release.version == "0.5.0"
-    assert updater.update_available(release, "0.4.0") is True
+    assert updater.update_available(release, "0.1.0") is True
     assert updater.update_available(release, "0.5.0") is False
 
 
