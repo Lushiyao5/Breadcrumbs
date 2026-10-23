@@ -1,0 +1,14 @@
+.venv/
+.install-test/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.db
+*.db-shm
+*.db-wal
+graphify-out/
+build/
+dist/
+*.egg-info/
+.build-check/
+.test-tmp-*/
