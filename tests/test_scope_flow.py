@@ -17,12 +17,16 @@ def test_start_cancel_skip_and_resume_do_not_duplicate_session(tmp_path, monkeyp
         app = BreadcrumbsApp()
         async with app.run_test(size=(110, 40)) as pilot:
             await pilot.click("#start")
+            await pilot.pause()
             assert isinstance(app.screen, StartSessionScreen)
             assert app.database.recent() == []
             await pilot.press("escape")
             assert app.timer.status is TimerStatus.READY
             assert app.database.recent() == []
-            await pilot.click("#start")
+            # Reopen with the keyboard; the previous Start click may still
+            # be in Textual's active effect after a fast cancellation.
+            await pilot.press("space")
+            await pilot.pause()
             await pilot.click("#start-untracked")
             assert app.timer.status is TimerStatus.RUNNING
             sid = app.active_session_id
@@ -46,6 +50,7 @@ def test_select_scope_then_edit_current_block_and_recover(tmp_path, monkeypatch)
         app = BreadcrumbsApp(session_name="scope-roundtrip")
         async with app.run_test(size=(120, 48)) as pilot:
             await pilot.click("#start")
+            await pilot.pause()
             await pilot.click("#start-scope")
             for _ in range(20):
                 await pilot.pause(0.05)
