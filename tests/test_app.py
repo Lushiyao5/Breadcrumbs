@@ -1,11 +1,38 @@
 import asyncio
 
 from textual.widgets import Static
+from textual.widgets import Button, Select
 
 from tlock.app import TlockApp
 from tlock.mascot import PixelMascot
 from tlock.timer import TimerKind, TimerStatus
 from tlock.widgets import CommandBar, GoalEditor, PixelProgress
+
+
+def test_sound_preview_uses_unsaved_selection_even_when_muted(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("TLOCK_HOME", str(tmp_path))
+    previews = []
+    monkeypatch.setattr("tlock.screens.play_completion", lambda enabled, theme: previews.append((enabled, theme)))
+
+    async def exercise():
+        app = TlockApp()
+        app.settings.sound_enabled = False
+        async with app.run_test(size=(110, 45)) as pilot:
+            app.action_settings()
+            await pilot.pause()
+            app.screen.query_one("#sound-theme", Select).value = "gentle"
+            preview = app.screen.query_one("#preview-sound", Button)
+            preview.scroll_visible(animate=False)
+            await pilot.pause()
+            await pilot.click("#preview-sound")
+            assert previews == [(True, "gentle")]
+            assert app.settings.sound_theme == "arcade"
+            assert app.settings.sound_enabled is False
+            assert not (tmp_path / "config.json").exists()
+            await pilot.press("escape")
+            await pilot.pause()
+
+    asyncio.run(exercise())
 
 
 def test_app_mounts_and_starts_a_session(tmp_path, monkeypatch) -> None:

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .config import data_dir
+from .session_names import generate_name, normalize_name
 
 
 def utc_now() -> str:
@@ -53,16 +54,81 @@ class Database:
             """
         )
         self.connection.commit()
+        columns = {row["name"] for row in self.connection.execute("PRAGMA table_info(sessions)")}
+        if "name" not in columns:
+            self.connection.execute("ALTER TABLE sessions ADD COLUMN name TEXT")
+        if "completion_reason" not in columns:
+            self.connection.execute(
+                "ALTER TABLE sessions ADD COLUMN completion_reason TEXT NOT NULL DEFAULT 'timer'"
+            )
+        self.connection.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_sessions_name ON sessions(name)"
+        )
+        self.connection.execute(
+            """CREATE TABLE IF NOT EXISTS checkpoints (
+                session_id INTEGER PRIMARY KEY REFERENCES sessions(id) ON DELETE CASCADE,
+                remaining_seconds REAL NOT NULL CHECK (remaining_seconds >= 0),
+                timer_status TEXT NOT NULL,
+                saved_at TEXT NOT NULL
+            )"""
+        )
+        self.connection.commit()
 
-    def begin_session(self, timer_kind: str, planned_seconds: int, goal: str) -> int:
+    def begin_session(self, timer_kind: str, planned_seconds: int, goal: str, name: str | None = None) -> int:
+        name = normalize_name(name) if name else self.new_session_name()
         cursor = self.connection.execute(
             """INSERT INTO sessions
-               (timer_kind, planned_seconds, goal, started_at)
-               VALUES (?, ?, ?, ?)""",
-            (timer_kind, planned_seconds, goal.strip(), utc_now()),
+               (timer_kind, planned_seconds, goal, started_at, name, status)
+               VALUES (?, ?, ?, ?, ?, 'running')""",
+            (timer_kind, planned_seconds, goal.strip(), utc_now(), name),
+        )
+        self.connection.execute(
+            "INSERT INTO checkpoints VALUES (?, ?, 'running', ?)",
+            (cursor.lastrowid, planned_seconds, utc_now()),
         )
         self.connection.commit()
         return int(cursor.lastrowid)
+
+    def new_session_name(self) -> str:
+        while True:
+            name = generate_name()
+            if not self.connection.execute("SELECT 1 FROM sessions WHERE name = ?", (name,)).fetchone():
+                return name
+
+    def name_exists(self, name: str) -> bool:
+        return self.connection.execute("SELECT 1 FROM sessions WHERE name = ?", (name,)).fetchone() is not None
+
+    def checkpoint(self, session_id: int, remaining: float, timer_status: str, goal: str) -> None:
+        with self.connection:
+            row = self.connection.execute(
+                "SELECT planned_seconds FROM sessions WHERE id = ? AND status = 'running'", (session_id,)
+            ).fetchone()
+            if row is None:
+                return
+            remaining = min(float(row[0]), max(0.0, remaining))
+            elapsed = max(0, int(row[0] - remaining))
+            self.connection.execute(
+                """INSERT INTO checkpoints VALUES (?, ?, ?, ?)
+                   ON CONFLICT(session_id) DO UPDATE SET
+                   remaining_seconds = excluded.remaining_seconds,
+                   timer_status = excluded.timer_status, saved_at = excluded.saved_at""",
+                (session_id, remaining, timer_status, utc_now()),
+            )
+            self.connection.execute(
+                "UPDATE sessions SET elapsed_seconds = ?, goal = ? WHERE id = ?",
+                (elapsed, goal.strip(), session_id),
+            )
+
+    def recoverable(self, name: str | None = None) -> list[dict[str, Any]]:
+        sql = """SELECT s.*, c.remaining_seconds, c.timer_status, c.saved_at
+                 FROM sessions s JOIN checkpoints c ON s.id = c.session_id
+                 WHERE s.status = 'running'"""
+        parameters = ()
+        if name is not None:
+            sql += " AND s.name = ?"
+            parameters = (name,)
+        sql += " ORDER BY c.saved_at DESC, s.id DESC"
+        return [dict(row) for row in self.connection.execute(sql, parameters)]
 
     def load_draft(self) -> str:
         row = self.connection.execute(
@@ -77,12 +143,13 @@ class Database:
         )
         self.connection.commit()
 
-    def finish_session(self, session_id: int, elapsed_seconds: int) -> None:
+    def finish_session(self, session_id: int, elapsed_seconds: int, reason: str = "timer") -> None:
         self.connection.execute(
-            """UPDATE sessions SET elapsed_seconds = ?, ended_at = ?, status = 'completed'
+            """UPDATE sessions SET elapsed_seconds = ?, ended_at = ?, status = 'completed', completion_reason = ?
                WHERE id = ?""",
-            (elapsed_seconds, utc_now(), session_id),
+            (elapsed_seconds, utc_now(), reason, session_id),
         )
+        self.connection.execute("DELETE FROM checkpoints WHERE session_id = ?", (session_id,))
         self.connection.commit()
 
     def abandon_session(self, session_id: int, elapsed_seconds: int) -> None:
@@ -91,6 +158,7 @@ class Database:
                WHERE id = ? AND status = 'running'""",
             (elapsed_seconds, utc_now(), session_id),
         )
+        self.connection.execute("DELETE FROM checkpoints WHERE session_id = ?", (session_id,))
         self.connection.commit()
 
     def add_reflection(self, session_id: int, actual: str, rating: int | None) -> None:
@@ -123,6 +191,17 @@ class Database:
                FROM sessions WHERE status = 'completed'"""
         ).fetchone()
         return {key: int(row[key]) for key in row.keys()}
+
+    def today_summary(self) -> dict[str, int]:
+        midnight = datetime.now().astimezone().replace(hour=0, minute=0, second=0, microsecond=0)
+        start = midnight.astimezone(timezone.utc).isoformat(timespec="seconds")
+        row = self.connection.execute(
+            """SELECT COALESCE(SUM(elapsed_seconds), 0) AS seconds,
+                      COALESCE(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END), 0) AS blocks
+               FROM sessions WHERE started_at >= ? AND timer_kind IN ('focus', 'custom')""",
+            (start,),
+        ).fetchone()
+        return {"seconds": int(row["seconds"]), "blocks": int(row["blocks"])}
 
     def export(self, limit: int | None = None) -> list[dict[str, Any]]:
         sql = "SELECT * FROM sessions ORDER BY started_at DESC"

@@ -9,6 +9,7 @@ class Verse:
     arabic: str
     translation: str
     reference: str
+    excerpt: bool = True
 
 
 VERSES = (
@@ -16,6 +17,7 @@ VERSES = (
         "فَإِنَّ مَعَ الْعُسْرِ يُسْرًا",
         "Indeed, with hardship comes ease.",
         "Ash-Sharh 94:5",
+        False,
     ),
     Verse(
         "وَقُل رَّبِّ زِدْنِي عِلْمًا",
@@ -41,6 +43,17 @@ VERSES = (
         "وَمَن يَتَوَكَّلْ عَلَى اللَّهِ فَهُوَ حَسْبُهُ",
         "Whoever puts their trust in Allah, He is sufficient for them.",
         "At-Talaq 65:3",
+    ),
+    Verse(
+        "وَأَن لَّيْسَ لِلْإِنسَانِ إِلَّا مَا سَعَىٰ",
+        "And that each person will only have what they endeavoured towards.",
+        "An-Najm 53:39",
+        False,
+    ),
+    Verse(
+        "لَا تَقْنَطُوا مِن رَّحْمَةِ اللَّهِ",
+        "Do not lose hope in Allah's mercy.",
+        "Az-Zumar 39:53",
     ),
 )
 

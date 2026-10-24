@@ -3,6 +3,44 @@ from __future__ import annotations
 from textual import events
 from textual.widgets import Static
 from textual.widgets import TextArea
+from textual.containers import Vertical
+
+
+class ReadingCard(Vertical):
+    """A short page-turn animation beside stable, readable card text."""
+
+    FRAMES = (
+        "  ___ ___\n /   V   \\\n|___/ \\___|",
+        "  ___|___\n /   |   \\\n|___/ \\___|",
+        "  ___/___\n /  /    \\\n|___/ \\___|",
+        "  ___ ___\n /   V   \\\n|___/ \\___|",
+    )
+    DEFAULT_CSS = """
+    ReadingCard { height: auto; }
+    #book-icon { height: 3; color: #70e1c1; text-align: center; margin-bottom: 1; }
+    #reading-text { height: auto; text-align: center; }
+    """
+
+    def compose(self):
+        yield Static(self.FRAMES[0], id="book-icon", markup=False)
+        yield Static("", id="reading-text", markup=False)
+
+    def on_mount(self) -> None:
+        self._frame = len(self.FRAMES)
+        self._animated = True
+        self._book_icon = self.query_one("#book-icon", Static)
+        self.set_interval(0.35, self._turn_page)
+
+    def show_card(self, text: str, animate: bool) -> None:
+        self._animated = animate
+        self._frame = 0 if animate else len(self.FRAMES)
+        self.query_one("#book-icon", Static).update(self.FRAMES[0])
+        self.query_one("#reading-text", Static).update(text)
+
+    def _turn_page(self) -> None:
+        if self._animated and self.display and self._book_icon.is_mounted and self._frame < len(self.FRAMES):
+            self._book_icon.update(self.FRAMES[self._frame])
+            self._frame += 1
 
 
 class CommandBar(Static):

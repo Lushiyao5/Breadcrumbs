@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.containers import Grid, Vertical, VerticalScroll
+from textual.containers import Grid, Horizontal, Vertical, VerticalScroll
 from textual.screen import ModalScreen
 from textual.widgets import Button, Input, Label, Select, Static, Switch, TextArea
 
 from .config import Settings
+from .sound import play_completion
 from .widgets import CommandBar
 
 
@@ -19,6 +20,9 @@ class SettingsScreen(ModalScreen[Settings | None]):
     #settings-actions { height: 3; grid-size: 2; grid-gutter: 1; margin-top: 1; }
     .setting-label { height: 3; content-align: left middle; }
     #settings-error { color: #ff6b6b; height: 1; }
+    #sound-pack-label { height: 3; }
+    #sound-pack-label Label { width: 1fr; }
+    #preview-sound { width: 11; min-width: 11; padding: 0; }
     """
 
     def __init__(self, settings: Settings) -> None:
@@ -52,15 +56,32 @@ class SettingsScreen(ModalScreen[Settings | None]):
                 yield Input(str(self.settings.sessions_before_long_break), id="cycle-count", type="integer")
                 yield Label("Completion melody", classes="setting-label")
                 yield Switch(self.settings.sound_enabled, id="sound-enabled")
-                yield Label("Sound pack", classes="setting-label")
+                with Horizontal(id="sound-pack-label"):
+                    yield Label("Sound pack", classes="setting-label")
+                    yield Button(
+                        "Preview", id="preview-sound",
+                        tooltip="Hear the selected pack, even when completion sounds are off. Does not save changes.",
+                    )
                 yield Select(
                     (("ARCADE", "arcade"), ("VICTORY", "victory"), ("GENTLE", "gentle")),
                     value=self.settings.sound_theme,
                     allow_blank=False,
                     id="sound-theme",
                 )
-                yield Label("Qur'an verses on breaks", classes="setting-label")
-                yield Switch(self.settings.quran_enabled, id="quran-enabled")
+                yield Label("Reading cards", classes="setting-label")
+                yield Select(
+                    (("Off", "off"), ("Qur'an", "quran"), ("Quotes", "quotes")),
+                    value=self.settings.effective_reading_mode, allow_blank=False, id="reading-mode",
+                )
+                yield Label("Show reading cards", classes="setting-label")
+                yield Select(
+                    (("Every block", "all"), ("Breaks only", "breaks")),
+                    value=self.settings.reading_scope, allow_blank=False, id="reading-scope",
+                )
+                yield Label("Change card every (minutes)", classes="setting-label")
+                yield Input(str(max(1, self.settings.reading_interval_seconds // 60)), type="integer", id="reading-minutes")
+                yield Label("Book animation", classes="setting-label")
+                yield Switch(self.settings.book_animation, id="book-animation")
                 yield Label("Auto-start breaks", classes="setting-label")
                 yield Switch(self.settings.auto_start_breaks, id="auto-break")
                 yield Label("Auto-start focus", classes="setting-label")
@@ -78,6 +99,13 @@ class SettingsScreen(ModalScreen[Settings | None]):
         self._save_settings()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "preview-sound":
+            event.stop()
+            button = event.button
+            button.disabled = True
+            play_completion(True, str(self.query_one("#sound-theme", Select).value))
+            self.set_timer(1.0, lambda: setattr(button, "disabled", False))
+            return
         if event.button.id == "cancel-settings":
             self.action_cancel()
             return
@@ -93,8 +121,11 @@ class SettingsScreen(ModalScreen[Settings | None]):
             ]
             if any(value < 1 for value in values) or any(value > 999 for value in values[:3]):
                 raise ValueError
+            reading_minutes = int(self.query_one("#reading-minutes", Input).value)
+            if not 1 <= reading_minutes <= 60:
+                raise ValueError
         except ValueError:
-            self.query_one("#settings-error", Label).update("Use positive durations (maximum 999 minutes).")
+            self.query_one("#settings-error", Label).update("Durations: 1–999 min. Reading interval: 1–60 min.")
             return
         self.dismiss(
             Settings(
@@ -107,7 +138,11 @@ class SettingsScreen(ModalScreen[Settings | None]):
                 ui_theme=str(self.query_one("#ui-theme", Select).value),
                 pet_key=self.settings.pet_key,
                 pet_enabled=self.query_one("#pet-enabled", Switch).value,
-                quran_enabled=self.query_one("#quran-enabled", Switch).value,
+                quran_enabled=self.query_one("#reading-mode", Select).value == "quran",
+                reading_mode=str(self.query_one("#reading-mode", Select).value),
+                reading_scope=str(self.query_one("#reading-scope", Select).value),
+                reading_interval_seconds=reading_minutes * 60,
+                book_animation=self.query_one("#book-animation", Switch).value,
                 auto_start_breaks=self.query_one("#auto-break", Switch).value,
                 auto_start_focus=self.query_one("#auto-focus", Switch).value,
             )
@@ -157,6 +192,105 @@ class ReflectionScreen(ModalScreen[tuple[str, int | None] | None]):
         self.dismiss((actual, rating))
 
 
+class SessionDecisionScreen(ModalScreen[str]):
+    BINDINGS = [("escape", "cancel", "Keep working")]
+    CSS = """
+    SessionDecisionScreen, RecoveryScreen, PresetScreen { align: center middle; background: #090b12e8; }
+    .session-card { width: 90%; max-width: 76; height: auto; max-height: 90%;
+        padding: 1 2; border: round #70e1c1; background: #151927; }
+    .session-card Static { height: auto; margin-bottom: 1; }
+    .session-card Button { width: 100%; margin-top: 1; }
+    .session-card Select { margin-bottom: 1; }
+    """
+
+    def __init__(self, name: str, elapsed: int, target: str) -> None:
+        super().__init__()
+        self.session_name = name
+        self.elapsed = elapsed
+        self.target = target
+
+    def compose(self) -> ComposeResult:
+        with VerticalScroll(classes="session-card"):
+            yield Static("What should happen to this block?", classes="modal-title")
+            yield Static(
+                f"{self.session_name} · {self.elapsed // 60}m {self.elapsed % 60}s worked\n\n"
+                f"Before you {self.target}:\n"
+                "Finish early saves your work as completed and opens a reflection.\n"
+                "End session records the partial time without marking it completed.",
+                markup=False,
+            )
+            yield Button("Keep working", id="keep", variant="success")
+            yield Button("Finish early", id="finish-early")
+            yield Button("End session", id="end-session")
+        yield CommandBar("TAB choose · ENTER confirm · ESC keep working")
+
+    def action_cancel(self) -> None:
+        self.dismiss("keep")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        event.stop()
+        if event.button.id in ("keep", "finish-early", "end-session"):
+            self.dismiss(event.button.id)
+
+
+class RecoveryScreen(ModalScreen[str | None]):
+    BINDINGS = [("escape", "new", "Start new")]
+    CSS = SessionDecisionScreen.CSS
+
+    def __init__(self, rows: list[dict]) -> None:
+        super().__init__()
+        self.rows = rows
+
+    def compose(self) -> ComposeResult:
+        with VerticalScroll(classes="session-card"):
+            yield Static("Pick up where you left off?", classes="modal-title")
+            yield Static(
+                "Saved blocks reopen paused at their last checkpoint.\n"
+                "Time away from Tlock is not counted. Starting a new block keeps these saves."
+            )
+            yield Select(
+                [(f"{r['name']} · {int(r['remaining_seconds']) // 60} min left", r["name"]) for r in self.rows],
+                value=self.rows[0]["name"], allow_blank=False, id="recover-name",
+            )
+            yield Button("Resume saved block", id="recover", variant="success")
+            yield Button("Start a new block", id="new-block")
+            yield Static("Later: tlock --resume NAME\nList saved blocks: tlock sessions")
+        yield CommandBar("TAB choose · ENTER confirm · ESC start new")
+
+    def action_new(self) -> None:
+        self.dismiss(None)
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        event.stop()
+        if event.button.id == "recover":
+            self.dismiss(str(self.query_one("#recover-name", Select).value))
+        elif event.button.id == "new-block":
+            self.action_new()
+
+
+class PresetScreen(ModalScreen[tuple[int, int] | None]):
+    BINDINGS = [("escape", "cancel", "Cancel")]
+    CSS = SessionDecisionScreen.CSS
+
+    def compose(self) -> ComposeResult:
+        with VerticalScroll(classes="session-card"):
+            yield Static("Choose a focus rhythm", classes="modal-title")
+            yield Static("Focus / short break. Long-break settings stay as configured.")
+            yield Button("Pomodoro · 25 / 5 minutes", id="preset-25")
+            yield Button("Extended · 50 / 10 minutes", id="preset-50")
+            yield Button("Deep work · 60 / 10 minutes", id="preset-60")
+            yield Button("Cancel", id="cancel-preset")
+        yield CommandBar("TAB choose · ENTER select · ESC cancel")
+
+    def action_cancel(self) -> None:
+        self.dismiss(None)
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        event.stop()
+        choices = {"preset-25": (25, 5), "preset-50": (50, 10), "preset-60": (60, 10)}
+        self.dismiss(choices.get(event.button.id))
+
+
 class HistoryScreen(ModalScreen[None]):
     """Recent activity kept away from the working surface."""
 
@@ -182,7 +316,12 @@ class HistoryScreen(ModalScreen[None]):
             for row in self.rows:
                 timestamp = datetime.fromisoformat(row["started_at"]).astimezone().strftime("%b %d, %H:%M")
                 minutes = row["elapsed_seconds"] // 60
-                text = f"{timestamp} · {row['timer_kind'].replace('_', ' ')} · {minutes} min · {row['status']}"
+                status = {"abandoned": "ended", "running": "in progress"}.get(row["status"], row["status"])
+                text = f"{timestamp} · {row['timer_kind'].replace('_', ' ')} · {minutes} min · {status}"
+                if row.get("name"):
+                    text = f"{row['name']}\n{text}"
+                if row.get("completion_reason") == "early":
+                    text += " · finished early"
                 if row["goal"]:
                     text += f"\n\n{row['goal']}"
                 if row["actual"]:

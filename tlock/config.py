@@ -27,6 +27,16 @@ class Settings:
     quran_enabled: bool = True
     auto_start_breaks: bool = False
     auto_start_focus: bool = False
+    reading_mode: str | None = None
+    reading_scope: str = "all"
+    reading_interval_seconds: int = 120
+    book_animation: bool = True
+
+    @property
+    def effective_reading_mode(self) -> str:
+        if self.reading_mode in ("off", "quran", "quotes"):
+            return self.reading_mode
+        return "quran" if self.quran_enabled else "off"
 
     @property
     def path(self) -> Path:

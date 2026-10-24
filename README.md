@@ -10,7 +10,7 @@ preferences use a local JSON file. Starting Tlock does not require an account
 or a network connection.
 
 [Latest release](https://github.com/SaroashDS/Tlock/releases/latest) ·
-[What's new in v0.2.0](docs/releases/v0.2.0.md)
+[What's new in v0.3.0](docs/releases/v0.3.0.md)
 
 ## Features
 
@@ -19,8 +19,11 @@ or a network connection.
 - A reflection prompt after completed focus sessions
 - An optional pixel companion, hidden by default
 - Saved intention drafts and unfinished tasks carried into the next block
+- Named session checkpoints that survive application and machine restarts
+- Finish early, end, or keep working before resetting or switching presets
+- Quick focus rhythms (25/5, 50/10, and 60/10) and a daily focus summary
 - Three 8-bit themes and three synthesized completion sounds
-- Optional Qur'an verse cards during breaks
+- Rotating Qur'an or quote cards with an optional book animation
 - Local session history and JSON export
 - Explicit, release-based updates through GitHub
 
@@ -70,6 +73,48 @@ tlock
 The companion is hidden by default. Enable **Show companion** in Settings if
 you want it on screen. Small terminals use a scrolling layout.
 
+## Named sessions and recovery
+
+Each block gets a name such as `calm-otter-a3f2` from a built-in word library.
+Edit the **Session name** field before starting, or keep the generated name.
+Names are unique and use letters, numbers, and hyphens.
+
+Tlock saves the timer, intentions, and session identity every second and when
+you pause or quit. After a restart, choose a saved block or start a new one.
+Starting a new block keeps the other saved blocks available.
+
+```powershell
+tlock sessions
+tlock --resume calm-otter-a3f2
+tlock --name my-reading-block
+```
+
+`--session NAME` is an alias for `--resume NAME`. Resumed blocks open paused at
+their last checkpoint; press `Space` to continue. Time spent outside Tlock does
+not count as work. A sudden shutdown may lose roughly the last second of timer
+progress. Normal exits save immediately and print the resume command.
+
+Press `P` for a focus rhythm. Switching timers or resetting an active block
+opens a choice: **Keep working**, **Finish early**, or **End session**. Finishing
+early records the time actually worked and opens a reflection. Ending records
+the partial time without marking the block completed. Press `F` to open this
+choice directly. Custom countdowns stay standalone after completion.
+
+The header summarizes focus time and completed blocks for sessions started
+today, using your machine's local date. Breaks are excluded.
+
+## Reading cards
+
+In Settings, choose **Off**, **Qur'an**, or **Quotes**. Cards can appear during
+every block or only during breaks, and rotate every 1–60 minutes (two minutes
+by default). Immediate repeats are avoided. The brief book animation runs when
+a new card appears and can be disabled independently.
+
+Verses cover effort, knowledge, patience, trust, and hope. Cards show Arabic,
+an English meaning, and a verse reference; partial verses are labeled as
+excerpts. Quotes are original Tlock reminders about effort, rest, and starting
+again. All content is bundled locally. See [reading sources](docs/READING.md).
+
 ## Controls
 
 The command bar remains visible while the main timer screen is open.
@@ -78,6 +123,8 @@ The command bar remains visible while the main timer screen is open.
 | --- | --- |
 | `Space` | Start or pause |
 | `R` | Reset the current timer |
+| `F` | Finish early / end / keep working |
+| `P` | Choose a focus rhythm |
 | `1` / `2` / `3` | Focus / short break / long break |
 | `M` | Pet the companion |
 | `N` | Spawn a random companion |
@@ -99,6 +146,9 @@ Inside the intention editor:
 Configuration covers durations, cycle length, auto-start behavior, themes,
 sound, and break verses. Use `Ctrl+S` to save a configuration or reflection
 dialog and `Escape` to close it without saving.
+
+Use **Preview** beside the sound pack selector to hear the current selection
+before saving. Preview works even when completion sounds are switched off.
 
 ## Local data
 

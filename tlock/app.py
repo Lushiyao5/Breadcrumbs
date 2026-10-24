@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import sqlite3
+import time
+
 from textual import events
 from textual.app import App, ComposeResult
 from textual.containers import Grid, Horizontal, ScrollableContainer, Vertical, VerticalScroll
@@ -9,11 +12,12 @@ from textual.widgets import Button, Input, Static, TextArea
 from .config import Settings
 from .db import Database
 from .mascot import PixelMascot
-from .screens import HistoryScreen, ReflectionScreen, SettingsScreen
+from .screens import HistoryScreen, PresetScreen, RecoveryScreen, ReflectionScreen, SessionDecisionScreen, SettingsScreen
+from .session_names import normalize_name
 from .sound import play_completion
 from .timer import TimerEngine, TimerKind, TimerStatus
-from .verses import Verse, random_verse
-from .widgets import CommandBar, GoalEditor, PixelProgress
+from .reading import next_card
+from .widgets import CommandBar, GoalEditor, PixelProgress, ReadingCard
 
 
 class TlockApp(App[None]):
@@ -35,6 +39,7 @@ class TlockApp(App[None]):
     #timer-panel { width: 40%; min-width: 37; }
     #companion-panel { width: 1fr; min-width: 30; }
     #mode { color: $mint; text-style: bold; text-align: center; margin-top: 1; }
+    #session-name { height: 3; margin-bottom: 1; }
     #clock { color: $gold; text-style: bold; text-align: center; height: 7;
         content-align: center middle; }
     #progress { margin: 0 1 1 1; color: $mint; height: 1; text-align: center; }
@@ -85,11 +90,15 @@ class TlockApp(App[None]):
     Screen.theme-gameboy #history-card { background: #1c2a14; border: round #88b04b; }
     Screen.theme-sunset #settings-card, Screen.theme-sunset #reflection-card,
     Screen.theme-sunset #history-card { background: #281438; border: round #a84f8e; }
+    Screen.theme-gameboy .session-card { background: #1c2a14; border: round #88b04b; }
+    Screen.theme-sunset .session-card { background: #281438; border: round #a84f8e; }
 
     """
     BINDINGS = [
         ("space", "toggle", "Start/Pause"),
         ("r", "reset", "Reset"),
+        ("f", "finish", "Finish early"),
+        ("p", "presets", "Presets"),
         ("m", "pet", "Pet"),
         ("n", "spawn_pet", "New pet"),
         ("c", "settings", "Config"),
@@ -102,14 +111,24 @@ class TlockApp(App[None]):
         ("q", "quit", "Quit"),
     ]
 
-    def __init__(self) -> None:
+    def __init__(self, resume_name: str | None = None, session_name: str | None = None) -> None:
         super().__init__()
         self.settings = Settings.load()
         self.database = Database()
+        self._goal_text = self.database.load_draft()
         self.timer = TimerEngine(self.settings.focus_minutes * 60)
         self.active_session_id: int | None = None
         self.completed_focuses = self.database.stats()["completed_focuses"]
-        self.current_verse: Verse | None = None
+        self.session_name = session_name or self.database.new_session_name()
+        self._start_new_requested = session_name is not None
+        self.resume_name = resume_name
+        self.resume_hint: str | None = None
+        self._last_checkpoint = 0.0
+        self._decision_open = False
+        self._completion_pending = False
+        self._reading_index: int | None = None
+        self._reading_mode: str | None = None
+        self._reading_due = 0.0
         self._home_screen: Screen | None = None
 
     def compose(self) -> ComposeResult:
@@ -133,11 +152,12 @@ class TlockApp(App[None]):
                     yield Button("■ RESET", id="reset")
                     yield Button("◆ CONFIG", id="settings")
             with VerticalScroll(classes="panel", id="companion-panel"):
+                yield Input(self.session_name, placeholder="Session name", id="session-name")
                 yield PixelMascot(self.settings.pet_key, id="mascot")
                 yield Static("Ready when you are.", id="mascot-line")
                 yield GoalEditor(self.database.load_draft(), id="goal-input")
                 yield Static("CTRL+B new task  ·  F2 tick/untick  ·  mouse wheel scrolls", id="goal-help")
-                yield Static("", id="verse")
+                yield ReadingCard(id="verse")
         yield CommandBar(
             "SPACE start/pause · E intentions · H history · C config · R reset · Q quit"
         )
@@ -152,6 +172,45 @@ class TlockApp(App[None]):
         self._home_query("#companion-panel", VerticalScroll).border_title = "Intentions"
         self._home_query("#timer-panel", Vertical).border_title = "Timer"
         self._home_query("#start", Button).focus()
+        self._home_query("#session-name", Input).border_title = "Session name"
+        self._home_query("#session-name", Input).tooltip = "Use your own name or keep the generated one."
+        self._home_query("#start", Button).tooltip = "Space: start or pause. F: finish early."
+        self._home_query("#focus", Button).tooltip = "P: choose a saved focus rhythm."
+        self.call_after_refresh(self._offer_recovery)
+
+    def _themed(self, screen):
+        screen.add_class(f"theme-{self.settings.ui_theme}")
+        return screen
+
+    def _offer_recovery(self) -> None:
+        if self.active_session_id is not None:
+            return
+        if self.resume_name:
+            self._recover(self.resume_name)
+        elif not self._start_new_requested:
+            rows = self.database.recoverable()
+            if rows:
+                self.push_screen(self._themed(RecoveryScreen(rows)), self._recover)
+
+    def _recover(self, name: str | None) -> None:
+        if name is None:
+            return
+        rows = self.database.recoverable(name)
+        if not rows:
+            self.notify("No saved block with that name.", severity="error")
+            return
+        row = rows[0]
+        self.timer.configure(row["planned_seconds"], TimerKind(row["timer_kind"]))
+        self.timer.remaining_seconds = row["remaining_seconds"]
+        self.timer.status = TimerStatus.PAUSED
+        self.active_session_id = row["id"]
+        self.session_name = row["name"]
+        self._goal_text = row["goal"]
+        self._home_query("#session-name", Input).value = self.session_name
+        self._home_query("#goal-input", GoalEditor).load_text(row["goal"] or GoalEditor.DEFAULT_TEXT)
+        self._checkpoint()
+        self._refresh_view()
+        self.notify(f"Recovered {name}. Press Space to resume.", title="Session recovered")
 
     def on_resize(self, event: events.Resize) -> None:
         self._apply_layout(event.size.width)
@@ -164,8 +223,19 @@ class TlockApp(App[None]):
         return (self._home_screen or self.screen).query_one(selector, expect_type)
 
     def on_unmount(self) -> None:
-        self._abandon_active()
+        if self.active_session_id is not None:
+            self.timer.pause()
+            self._checkpoint()
+            self.resume_hint = self.session_name
         self.database.close()
+
+    def _checkpoint(self) -> None:
+        if self.active_session_id is not None:
+            self.database.checkpoint(
+                self.active_session_id, self.timer.remaining_seconds,
+                self.timer.status.value, self._goal_text,
+            )
+        self._last_checkpoint = time.monotonic()
 
     def _duration_for(self, kind: TimerKind) -> int:
         minutes = {
@@ -176,11 +246,20 @@ class TlockApp(App[None]):
         return minutes * 60
 
     def _select(self, kind: TimerKind, seconds: int | None = None) -> None:
-        if self.timer.status in (TimerStatus.RUNNING, TimerStatus.PAUSED):
-            self._abandon_active()
+        if self.active_session_id is not None:
+            self._request_change(lambda: self._configure(kind, seconds), "switch timers")
+            return
+        self._configure(kind, seconds)
+
+    def _configure(self, kind: TimerKind, seconds: int | None = None) -> None:
         self.timer.configure(seconds or self._duration_for(kind), kind)
-        if kind in (TimerKind.SHORT_BREAK, TimerKind.LONG_BREAK):
-            self.current_verse = random_verse(self.current_verse)
+        typed_name = self._home_query("#session-name", Input).value.strip()
+        if typed_name and not self.database.name_exists(typed_name):
+            self.session_name = typed_name
+        elif self.database.name_exists(self.session_name):
+            self.session_name = self.database.new_session_name()
+        self._home_query("#session-name", Input).value = self.session_name
+        self._reading_due = 0.0
         self._refresh_view()
 
     def action_focus(self) -> None:
@@ -193,22 +272,72 @@ class TlockApp(App[None]):
         self._select(TimerKind.LONG_BREAK)
 
     def action_toggle(self) -> None:
+        if self.timer.status is TimerStatus.FINISHED and self.active_session_id is not None:
+            self._completion_pending = False
+            self._complete_timer()
+            return
         if self.timer.status in (TimerStatus.READY, TimerStatus.PAUSED):
             if self.timer.status is TimerStatus.READY:
                 goal = self._home_query("#goal-input", GoalEditor).goal_text
-                self.active_session_id = self.database.begin_session(
-                    self.timer.kind.value, self.timer.duration_seconds, goal
-                )
+                self._goal_text = goal
+                try:
+                    raw_name = self._home_query("#session-name", Input).value.strip()
+                    self.session_name = normalize_name(raw_name) if raw_name else self.database.new_session_name()
+                    self.active_session_id = self.database.begin_session(
+                        self.timer.kind.value, self.timer.duration_seconds, goal, self.session_name
+                    )
+                    self._home_query("#session-name", Input).value = self.session_name
+                except ValueError as exc:
+                    self.notify(str(exc), severity="error")
+                    return
+                except sqlite3.IntegrityError:
+                    self.notify("That session name is already used. Choose another name.", severity="error")
+                    return
             self.timer.start()
         elif self.timer.status is TimerStatus.RUNNING:
             self.timer.pause()
         elif self.timer.status is TimerStatus.FINISHED:
-            self.timer.reset()
+            self._configure(self.timer.kind, self.timer.duration_seconds)
+        self._checkpoint()
         self._refresh_view()
 
     def action_reset(self) -> None:
-        self._abandon_active()
-        self.timer.reset()
+        self._select(self.timer.kind, self.timer.duration_seconds)
+
+    def action_finish(self) -> None:
+        if self.active_session_id is not None:
+            self._request_change(
+                lambda: self._configure(self.timer.kind, self.timer.duration_seconds),
+                "finish this block",
+            )
+
+    def _request_change(self, continuation, target: str) -> None:
+        if self._decision_open:
+            return
+        was_running = self.timer.status is TimerStatus.RUNNING
+        if self.timer.status is TimerStatus.FINISHED or (was_running and self.timer.tick()):
+            self._completion_pending = False
+            self._complete_timer()
+            return
+        self.timer.pause()
+        self._checkpoint()
+        self._decision_open = True
+        self.push_screen(
+            self._themed(SessionDecisionScreen(self.session_name, self.timer.elapsed_seconds, target)),
+            lambda choice: self._change_decided(choice, continuation, was_running),
+        )
+
+    def _change_decided(self, choice: str, continuation, was_running: bool) -> None:
+        self._decision_open = False
+        if choice == "keep":
+            if was_running:
+                self.timer.start()
+            self._checkpoint()
+        elif choice == "end-session":
+            self._abandon_active()
+            continuation()
+        elif choice == "finish-early":
+            self._finish_block(self.timer.elapsed_seconds, "early", continuation)
         self._refresh_view()
         self._refresh_history()
 
@@ -236,6 +365,23 @@ class TlockApp(App[None]):
         screen.add_class(f"theme-{self.settings.ui_theme}")
         self.push_screen(screen, self._settings_closed)
 
+    def action_presets(self) -> None:
+        self.push_screen(self._themed(PresetScreen()), self._preset_chosen)
+
+    def _preset_chosen(self, preset: tuple[int, int] | None) -> None:
+        if preset is None:
+            return
+
+        def apply_preset() -> None:
+            self.settings.focus_minutes, self.settings.short_break_minutes = preset
+            self.settings.save()
+            self._configure(TimerKind.FOCUS)
+
+        if self.active_session_id is not None:
+            self._request_change(apply_preset, f"switch to the {preset[0]}/{preset[1]} preset")
+        else:
+            apply_preset()
+
     def action_history(self) -> None:
         screen = HistoryScreen(self.database.recent(50))
         screen.add_class(f"theme-{self.settings.ui_theme}")
@@ -252,6 +398,7 @@ class TlockApp(App[None]):
             return
         self.settings = settings
         settings.save()
+        self._reading_due = 0.0
         self._apply_theme()
         if self.timer.status is TimerStatus.READY and self.timer.kind is not TimerKind.CUSTOM:
             self._select(self.timer.kind)
@@ -279,25 +426,46 @@ class TlockApp(App[None]):
                 self._select(TimerKind.CUSTOM, int(raw) * 60)
 
     def _tick(self) -> None:
+        # A final timer callback can arrive after Textual removes screen children.
+        if self._home_screen is None or not len(self._home_screen.query("#mode")):
+            return
         if self.timer.tick():
+            self._completion_pending = True
+        if self._completion_pending and self.screen is self._home_screen:
+            self._completion_pending = False
             self._complete_timer()
+        if time.monotonic() - self._last_checkpoint >= 1:
+            self._checkpoint()
+            self._refresh_history()
         self._refresh_view()
 
     def _complete_timer(self) -> None:
+        self._finish_block(self.timer.duration_seconds, "timer")
+
+    def _finish_block(self, elapsed: int, reason: str, continuation=None) -> None:
         completed_id = self.active_session_id
         if completed_id is not None:
-            self.database.finish_session(completed_id, self.timer.duration_seconds)
+            self.database.finish_session(completed_id, elapsed, reason)
             self.active_session_id = None
-        play_completion(self.settings.sound_enabled, self.settings.sound_theme)
-        if self.timer.kind in (TimerKind.FOCUS, TimerKind.CUSTOM):
+        self.timer.status = TimerStatus.FINISHED
+        self.timer._deadline = None
+        if reason == "timer":
+            play_completion(self.settings.sound_enabled, self.settings.sound_theme)
+        focus_block = self.timer.kind in (TimerKind.FOCUS, TimerKind.CUSTOM)
+        if focus_block and completed_id is not None:
             self.completed_focuses += 1
-            if completed_id is not None:
-                reflection = ReflectionScreen()
-                reflection.add_class(f"theme-{self.settings.ui_theme}")
-                self.push_screen(
-                    reflection,
-                    lambda result: self._reflection_closed(completed_id, result),
-                )
+        if continuation is None and self.timer.kind is TimerKind.CUSTOM:
+            seconds = self.timer.duration_seconds
+            continuation = lambda: self._configure(TimerKind.CUSTOM, seconds)
+        if completed_id is not None and (focus_block or continuation is not None):
+            reflection = ReflectionScreen()
+            reflection.add_class(f"theme-{self.settings.ui_theme}")
+            self.push_screen(
+                reflection,
+                lambda result: self._reflection_closed(completed_id, result, continuation),
+            )
+        elif continuation is not None:
+            continuation()
         else:
             self._select(TimerKind.FOCUS)
             if self.settings.auto_start_focus:
@@ -305,7 +473,7 @@ class TlockApp(App[None]):
         self._refresh_history()
 
     def _reflection_closed(
-        self, session_id: int, result: tuple[str, int | None] | None
+        self, session_id: int, result: tuple[str, int | None] | None, continuation=None
     ) -> None:
         if result is not None:
             self.database.add_reflection(session_id, result[0], result[1])
@@ -316,6 +484,10 @@ class TlockApp(App[None]):
         )
         self._home_query("#goal-input", GoalEditor).carry_remaining()
         self.database.save_draft(self._home_query("#goal-input", GoalEditor).text)
+        if continuation is not None:
+            continuation()
+            self._refresh_history()
+            return
         self._select(next_kind)
         self._refresh_history()
         if self.settings.auto_start_breaks:
@@ -323,7 +495,8 @@ class TlockApp(App[None]):
 
     def on_text_area_changed(self, event: TextArea.Changed) -> None:
         if event.text_area.id == "goal-input":
-            editor = self._home_query("#goal-input", GoalEditor)
+            editor = event.text_area
+            self._goal_text = editor.goal_text
             self.database.save_draft(editor.text)
             if self.active_session_id is not None:
                 self.database.update_goal(self.active_session_id, editor.goal_text)
@@ -348,6 +521,7 @@ class TlockApp(App[None]):
             TimerKind.CUSTOM: "CUSTOM TIMER",
         }
         self._home_query("#mode", Static).update(names[self.timer.kind])
+        self._home_query("#session-name", Input).disabled = self.active_session_id is not None
         clock = self._home_query("#clock", Static)
         clock.update(self.timer.display)
         clock.set_classes(f"status-{self.timer.status.value}")
@@ -366,18 +540,25 @@ class TlockApp(App[None]):
             TimerStatus.PAUSED: "▶ RESUME",
             TimerStatus.FINISHED: "↺ AGAIN",
         }[self.timer.status]
-        verse_panel = self._home_query("#verse", Static)
-        if is_break and self.settings.quran_enabled and self.current_verse:
-            verse_panel.update(
-                f"{self.current_verse.arabic}\n\n{self.current_verse.translation}\n— {self.current_verse.reference}"
-            )
+        verse_panel = self._home_query("#verse", ReadingCard)
+        mode = self.settings.effective_reading_mode
+        visible = mode != "off" and (self.settings.reading_scope == "all" or is_break)
+        if visible:
+            if mode != self._reading_mode:
+                self._reading_index = None
+                self._reading_due = 0.0
+            if time.monotonic() >= self._reading_due:
+                self._reading_index, text = next_card(mode, self._reading_index)
+                verse_panel.show_card(text, self.settings.book_animation)
+                self._reading_due = time.monotonic() + self.settings.reading_interval_seconds
+                self._reading_mode = mode
             verse_panel.add_class("visible")
         else:
             verse_panel.remove_class("visible")
 
     def _refresh_history(self) -> None:
-        stats = self.database.stats()
+        today = self.database.today_summary()
         cycle = self.completed_focuses % self.settings.sessions_before_long_break
         self._home_query("#summary", Static).update(
-            f"{stats['completed_focuses']} focus blocks · cycle {cycle}/{self.settings.sessions_before_long_break}"
+            f"Today: {today['seconds'] // 60}m · {today['blocks']} blocks · cycle {cycle}/{self.settings.sessions_before_long_break}"
         )
