@@ -12,7 +12,8 @@ an account or a network connection.
 - Focus, short-break, long-break, and custom timers
 - Scrollable, multiline intentions with checkable tasks
 - A reflection prompt after completed focus sessions
-- Randomized pixel pets that react to timer state and interaction
+- An optional pixel companion, hidden by default
+- Saved intention drafts and unfinished tasks carried into the next block
 - Three 8-bit themes and three synthesized completion sounds
 - Optional Qur'an verse cards during breaks
 - Local session history and JSON export
@@ -64,6 +65,8 @@ The command bar remains visible while the main timer screen is open.
 | `M` | Pet the companion |
 | `N` | Spawn a random companion |
 | `C` | Open configuration |
+| `E` | Edit intentions |
+| `H` | Open recent history and reflections |
 | `Q` | Quit |
 
 Inside the intention editor:
@@ -72,6 +75,7 @@ Inside the intention editor:
 | --- | --- |
 | `Ctrl+B` | Add a checklist item |
 | `F2` | Tick or untick the item under the cursor |
+| `Escape` | Return to timer controls |
 | Mouse wheel / arrow keys | Scroll and move through longer plans |
 
 Configuration covers durations, cycle length, auto-start behavior, themes,

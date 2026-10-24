@@ -1,25 +1,23 @@
 from __future__ import annotations
 
-from datetime import datetime
-
 from textual import events
 from textual.app import App, ComposeResult
 from textual.containers import Grid, Horizontal, ScrollableContainer, Vertical, VerticalScroll
 from textual.screen import Screen
-from textual.widgets import Button, Input, Label, Static, TextArea
+from textual.widgets import Button, Input, Static, TextArea
 
 from .config import Settings
 from .db import Database
 from .mascot import PixelMascot
-from .screens import ReflectionScreen, SettingsScreen
+from .screens import HistoryScreen, ReflectionScreen, SettingsScreen
 from .sound import play_completion
 from .timer import TimerEngine, TimerKind, TimerStatus
 from .verses import Verse, random_verse
-from .widgets import CommandBar, GoalEditor, PixelLogo, PixelProgress
+from .widgets import CommandBar, GoalEditor, PixelProgress
 
 
 class TlockApp(App[None]):
-    TITLE = "TLOCK // 8-BIT FOCUS COMPANION"
+    TITLE = "Tlock"
     CSS = """
     $bg: #090b12;
     $panel: #131827;
@@ -29,17 +27,15 @@ class TlockApp(App[None]):
     $dim: #78869f;
 
     Screen { background: $bg; color: #edf2f7; }
-    #brand { height: 8; padding: 0 2; background: #0d111d; border-bottom: heavy #303a55; }
-    #logo { width: 58; color: $gold; height: 6; }
-    #brand-copy { width: 1fr; color: $dim; text-align: right; content-align: right middle; }
-    #body { height: 1fr; padding: 1 1 0 1; layout: horizontal; }
-    .panel { background: $panel; border: heavy #303a55; padding: 1 2; margin: 0 1; }
-    #timer-panel { width: 42%; min-width: 42; }
-    #companion-panel { width: 33%; min-width: 34; }
-    #history-panel { width: 25%; min-width: 28; }
-    .eyebrow { color: $dim; text-style: bold; height: 1; }
+    #brand { height: 3; padding: 0 3; background: transparent; }
+    #brand-name { width: 1fr; content-align: left middle; text-style: bold; color: $mint; }
+    #summary { width: 1fr; content-align: right middle; color: $dim; }
+    #body { height: 1fr; padding: 0 2 1 2; layout: horizontal; }
+    .panel { background: $panel; border: round #303a55; padding: 1 2; margin: 0 1; }
+    #timer-panel { width: 40%; min-width: 37; }
+    #companion-panel { width: 1fr; min-width: 30; }
     #mode { color: $mint; text-style: bold; text-align: center; margin-top: 1; }
-    #clock { color: $gold; text-style: bold; text-align: center; height: 5;
+    #clock { color: $gold; text-style: bold; text-align: center; height: 7;
         content-align: center middle; }
     #progress { margin: 0 1 1 1; color: $mint; height: 1; text-align: center; }
     #mode-buttons { grid-size: 3; grid-gutter: 1; height: 3; }
@@ -51,18 +47,15 @@ class TlockApp(App[None]):
     #custom-row { height: 3; margin-top: 1; }
     #custom-minutes { width: 1fr; }
     #custom { width: 13; margin-left: 1; }
-    #mascot { height: 8; color: $mint; text-align: center; content-align: center middle; }
-    #mascot-line { text-align: center; color: #aab4c8; height: 2; }
-    #pet-buttons { grid-size: 2; grid-gutter: 1; height: 3; margin-bottom: 1; }
-    #pet { color: $pink; }
-    #goal-input { height: 9; margin-top: 1; background: #0d111d; border: tall #303a55; }
+    #mascot { height: 5; color: $mint; text-align: center; content-align: center middle; }
+    #mascot-line { text-align: center; color: #aab4c8; height: 1; margin-bottom: 1; }
+    .pet-hidden #mascot, .pet-hidden #mascot-line { display: none; }
+    #goal-input { height: 1fr; min-height: 9; background: #0d111d; border: tall #303a55; }
     #goal-input:focus { border: tall $mint; }
     #goal-help { height: 2; color: $dim; text-align: center; }
     #verse { display: none; height: auto; min-height: 7; margin-top: 1; padding: 1;
         border: heavy #53617a; color: #d8e2f0; text-align: center; background: #0d111d; }
     #verse.visible { display: block; }
-    #history { height: 1fr; color: #bbc5d6; margin-top: 1; }
-    #stats { color: $gold; height: 3; margin-top: 1; }
     .modal-title { color: $gold; text-style: bold; text-align: center; height: 2; }
     .status-ready { color: #aab4c8; }
     .status-running { color: $mint; }
@@ -70,30 +63,28 @@ class TlockApp(App[None]):
     .status-finished { color: $gold; }
 
     Screen.theme-gameboy { background: #11180d; color: #d8f3a6; }
-    Screen.theme-gameboy #brand { background: #17220f; border-bottom: heavy #88b04b; }
-    Screen.theme-gameboy .panel { background: #1c2a14; border: heavy #668c3c; }
-    Screen.theme-gameboy #logo, Screen.theme-gameboy #clock,
-    Screen.theme-gameboy #stats { color: #c7f464; }
+    Screen.theme-gameboy .panel { background: #1c2a14; border: round #668c3c; }
+    Screen.theme-gameboy #clock { color: #c7f464; }
     Screen.theme-gameboy #progress, Screen.theme-gameboy #mascot,
     Screen.theme-gameboy #mode { color: #8fd14f; }
 
     Screen.theme-sunset { background: #170d24; color: #ffe6d6; }
-    Screen.theme-sunset #brand { background: #22102f; border-bottom: heavy #a84f8e; }
-    Screen.theme-sunset .panel { background: #281438; border: heavy #7d477e; }
-    Screen.theme-sunset #logo, Screen.theme-sunset #clock,
-    Screen.theme-sunset #stats { color: #ffb45e; }
+    Screen.theme-sunset .panel { background: #281438; border: round #7d477e; }
+    Screen.theme-sunset #clock { color: #ffb45e; }
     Screen.theme-sunset #progress, Screen.theme-sunset #mascot,
     Screen.theme-sunset #mode { color: #ff75a8; }
 
-    Screen.compact #brand { height: 4; }
-    Screen.compact #logo { display: none; }
-    Screen.compact #brand-copy { text-align: center; content-align: center middle; }
     Screen.compact #body { layout: vertical; overflow-y: scroll; overflow-x: hidden; }
-    Screen.compact #timer-panel, Screen.compact #companion-panel,
-    Screen.compact #history-panel { width: 100%; min-width: 0; height: auto; margin-bottom: 1; }
+    Screen.compact #timer-panel, Screen.compact #companion-panel {
+        width: 100%; min-width: 0; height: auto; margin-bottom: 1; }
     Screen.compact #timer-panel { min-height: 23; }
-    Screen.compact #companion-panel { min-height: 31; }
-    Screen.compact #history-panel { min-height: 18; }
+    Screen.compact #companion-panel { min-height: 17; }
+    Screen.compact #goal-input { height: 10; }
+
+    Screen.theme-gameboy #settings-card, Screen.theme-gameboy #reflection-card,
+    Screen.theme-gameboy #history-card { background: #1c2a14; border: round #88b04b; }
+    Screen.theme-sunset #settings-card, Screen.theme-sunset #reflection-card,
+    Screen.theme-sunset #history-card { background: #281438; border: round #a84f8e; }
 
     """
     BINDINGS = [
@@ -102,6 +93,9 @@ class TlockApp(App[None]):
         ("m", "pet", "Pet"),
         ("n", "spawn_pet", "New pet"),
         ("c", "settings", "Config"),
+        ("h", "history", "History"),
+        ("e", "edit_goals", "Edit intentions"),
+        ("escape", "leave_editor", "Back to timer"),
         ("1", "focus", "Focus"),
         ("2", "short_break", "Short break"),
         ("3", "long_break", "Long break"),
@@ -120,16 +114,10 @@ class TlockApp(App[None]):
 
     def compose(self) -> ComposeResult:
         with Horizontal(id="brand"):
-            yield PixelLogo(id="logo")
-            yield Static(
-                "[b]FOCUS OS // LOCAL MODE[/b]\n"
-                "Build a block. Keep the receipt.\n"
-                "[dim]All history stays on this machine.[/dim]",
-                id="brand-copy",
-            )
+            yield Static("TLOCK", id="brand-name")
+            yield Static("", id="summary")
         with ScrollableContainer(id="body"):
             with Vertical(classes="panel", id="timer-panel"):
-                yield Label("┌─ TIMER DECK / SELECT MISSION ─┐", classes="eyebrow")
                 yield Static("FOCUS RUN", id="mode")
                 yield Static(self.timer.display, id="clock")
                 yield PixelProgress(id="progress")
@@ -145,23 +133,13 @@ class TlockApp(App[None]):
                     yield Button("■ RESET", id="reset")
                     yield Button("◆ CONFIG", id="settings")
             with VerticalScroll(classes="panel", id="companion-panel"):
-                yield Label("┌─ POCKET COMPANION ─┐", classes="eyebrow")
                 yield PixelMascot(self.settings.pet_key, id="mascot")
                 yield Static("Ready when you are.", id="mascot-line")
-                with Grid(id="pet-buttons"):
-                    yield Button("♥ PET", id="pet")
-                    yield Button("✦ SPAWN", id="spawn-pet")
-                yield Label("┌─ INTENTION FOR THIS BLOCK ─┐", classes="eyebrow")
-                yield GoalEditor(id="goal-input")
+                yield GoalEditor(self.database.load_draft(), id="goal-input")
                 yield Static("CTRL+B new task  ·  F2 tick/untick  ·  mouse wheel scrolls", id="goal-help")
                 yield Static("", id="verse")
-            with Vertical(classes="panel", id="history-panel"):
-                yield Label("┌─ SAVE FILE / ACTIVITY ─┐", classes="eyebrow")
-                yield Static("", id="stats")
-                yield Static("", id="history")
         yield CommandBar(
-            "SPACE start/pause  ·  1 focus  ·  2 short  ·  3 long  ·  "
-            "M pet  ·  N spawn  ·  C config  ·  R reset  ·  Q quit"
+            "SPACE start/pause · E intentions · H history · C config · R reset · Q quit"
         )
 
     def on_mount(self) -> None:
@@ -171,12 +149,15 @@ class TlockApp(App[None]):
         self.set_interval(0.2, self._tick)
         self._refresh_view()
         self._refresh_history()
+        self._home_query("#companion-panel", VerticalScroll).border_title = "Intentions"
+        self._home_query("#timer-panel", Vertical).border_title = "Timer"
+        self._home_query("#start", Button).focus()
 
     def on_resize(self, event: events.Resize) -> None:
         self._apply_layout(event.size.width)
 
     def _apply_layout(self, width: int) -> None:
-        (self._home_screen or self.screen).set_class(width < 105, "compact")
+        (self._home_screen or self.screen).set_class(width < 85 or self.size.height < 28, "compact")
 
     def _home_query(self, selector: str, expect_type):
         """Query the timer's home screen even while a modal is active."""
@@ -251,7 +232,20 @@ class TlockApp(App[None]):
         self.notify(f"{name} joined your focus party", title="NEW COMPANION")
 
     def action_settings(self) -> None:
-        self.push_screen(SettingsScreen(self.settings), self._settings_closed)
+        screen = SettingsScreen(self.settings)
+        screen.add_class(f"theme-{self.settings.ui_theme}")
+        self.push_screen(screen, self._settings_closed)
+
+    def action_history(self) -> None:
+        screen = HistoryScreen(self.database.recent(50))
+        screen.add_class(f"theme-{self.settings.ui_theme}")
+        self.push_screen(screen)
+
+    def action_edit_goals(self) -> None:
+        self._home_query("#goal-input", GoalEditor).focus()
+
+    def action_leave_editor(self) -> None:
+        self._home_query("#start", Button).focus()
 
     def _settings_closed(self, settings: Settings | None) -> None:
         if settings is None:
@@ -298,8 +292,10 @@ class TlockApp(App[None]):
         if self.timer.kind in (TimerKind.FOCUS, TimerKind.CUSTOM):
             self.completed_focuses += 1
             if completed_id is not None:
+                reflection = ReflectionScreen()
+                reflection.add_class(f"theme-{self.settings.ui_theme}")
                 self.push_screen(
-                    ReflectionScreen(),
+                    reflection,
                     lambda result: self._reflection_closed(completed_id, result),
                 )
         else:
@@ -318,21 +314,25 @@ class TlockApp(App[None]):
             if self.completed_focuses % self.settings.sessions_before_long_break == 0
             else TimerKind.SHORT_BREAK
         )
-        self._home_query("#goal-input", GoalEditor).clear_goals()
+        self._home_query("#goal-input", GoalEditor).carry_remaining()
+        self.database.save_draft(self._home_query("#goal-input", GoalEditor).text)
         self._select(next_kind)
         self._refresh_history()
         if self.settings.auto_start_breaks:
             self.action_toggle()
 
     def on_text_area_changed(self, event: TextArea.Changed) -> None:
-        if event.text_area.id == "goal-input" and self.active_session_id is not None:
+        if event.text_area.id == "goal-input":
             editor = self._home_query("#goal-input", GoalEditor)
-            self.database.update_goal(self.active_session_id, editor.goal_text)
+            self.database.save_draft(editor.text)
+            if self.active_session_id is not None:
+                self.database.update_goal(self.active_session_id, editor.goal_text)
 
     def _apply_theme(self) -> None:
         for theme in ("midnight", "gameboy", "sunset"):
             (self._home_screen or self.screen).remove_class(f"theme-{theme}")
         (self._home_screen or self.screen).add_class(f"theme-{self.settings.ui_theme}")
+        (self._home_screen or self.screen).set_class(not self.settings.pet_enabled, "pet-hidden")
 
     def _abandon_active(self) -> None:
         if self.active_session_id is not None:
@@ -376,22 +376,8 @@ class TlockApp(App[None]):
             verse_panel.remove_class("visible")
 
     def _refresh_history(self) -> None:
-        rows = self.database.recent()
         stats = self.database.stats()
-        minutes = stats["elapsed_seconds"] // 60
         cycle = self.completed_focuses % self.settings.sessions_before_long_break
-        self._home_query("#stats", Static).update(
-            f"★ {stats['completed']:02d} CLEARED  ·  {minutes:03d} MIN\n"
-            f"CYCLE {cycle}/{self.settings.sessions_before_long_break} → LONG REST"
+        self._home_query("#summary", Static).update(
+            f"{stats['completed_focuses']} focus blocks · cycle {cycle}/{self.settings.sessions_before_long_break}"
         )
-        if not rows:
-            text = "No sessions yet.\nYour next block starts the story."
-        else:
-            icons = {"completed": "◆", "abandoned": "◇", "running": "▶"}
-            lines = []
-            for row in rows:
-                timestamp = datetime.fromisoformat(row["started_at"]).astimezone().strftime("%H:%M")
-                goal = row["goal"] or row["timer_kind"].replace("_", " ")
-                lines.append(f"{icons[row['status']]} {timestamp}  {goal[:24]}")
-            text = "\n\n".join(lines)
-        self._home_query("#history", Static).update(text)

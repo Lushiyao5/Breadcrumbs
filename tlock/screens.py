@@ -13,7 +13,7 @@ class SettingsScreen(ModalScreen[Settings | None]):
     BINDINGS = [("escape", "cancel", "Cancel"), ("ctrl+s", "save", "Save")]
     CSS = """
     SettingsScreen { align: center middle; background: #090b12e8; }
-    #settings-card { width: 72; height: auto; max-height: 95%; padding: 1 2;
+    #settings-card { width: 90%; max-width: 72; height: auto; max-height: 90%; padding: 1 2;
         border: heavy #ffd166; background: #151927; }
     #settings-grid { grid-size: 2; grid-columns: 1fr 20; grid-gutter: 1; height: auto; }
     #settings-actions { height: 3; grid-size: 2; grid-gutter: 1; margin-top: 1; }
@@ -27,7 +27,7 @@ class SettingsScreen(ModalScreen[Settings | None]):
 
     def compose(self) -> ComposeResult:
         with VerticalScroll(id="settings-card"):
-            yield Static("◆  SYSTEM CONFIG  ◆", classes="modal-title")
+            yield Static("Settings", classes="modal-title")
             with Grid(id="settings-grid"):
                 yield Label("Visual theme", classes="setting-label")
                 yield Select(
@@ -40,6 +40,8 @@ class SettingsScreen(ModalScreen[Settings | None]):
                     allow_blank=False,
                     id="ui-theme",
                 )
+                yield Label("Show companion", classes="setting-label")
+                yield Switch(self.settings.pet_enabled, id="pet-enabled")
                 yield Label("Focus minutes", classes="setting-label")
                 yield Input(str(self.settings.focus_minutes), id="focus-minutes", type="integer")
                 yield Label("Short break minutes", classes="setting-label")
@@ -104,6 +106,7 @@ class SettingsScreen(ModalScreen[Settings | None]):
                 sound_theme=str(self.query_one("#sound-theme", Select).value),
                 ui_theme=str(self.query_one("#ui-theme", Select).value),
                 pet_key=self.settings.pet_key,
+                pet_enabled=self.query_one("#pet-enabled", Switch).value,
                 quran_enabled=self.query_one("#quran-enabled", Switch).value,
                 auto_start_breaks=self.query_one("#auto-break", Switch).value,
                 auto_start_focus=self.query_one("#auto-focus", Switch).value,
@@ -115,7 +118,7 @@ class ReflectionScreen(ModalScreen[tuple[str, int | None] | None]):
     BINDINGS = [("escape", "skip", "Skip"), ("ctrl+s", "save", "Save")]
     CSS = """
     ReflectionScreen { align: center middle; background: #090b12e8; }
-    #reflection-card { width: 72; height: 23; padding: 1 2;
+    #reflection-card { width: 90%; max-width: 72; height: 23; max-height: 90%; overflow-y: auto; padding: 1 2;
         border: heavy #70e1c1; background: #151927; }
     #actual-work { height: 8; margin: 1 0; }
     #rating { width: 16; }
@@ -124,7 +127,7 @@ class ReflectionScreen(ModalScreen[tuple[str, int | None] | None]):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="reflection-card"):
-            yield Static("★  QUEST COMPLETE  ★", classes="modal-title")
+            yield Static("Block complete", classes="modal-title")
             yield Label("What did you actually accomplish?")
             yield TextArea(id="actual-work")
             yield Label("Focus quality (1–5, optional)")
@@ -152,3 +155,47 @@ class ReflectionScreen(ModalScreen[tuple[str, int | None] | None]):
         raw_rating = self.query_one("#rating", Input).value.strip()
         rating = int(raw_rating) if raw_rating.isdigit() and 1 <= int(raw_rating) <= 5 else None
         self.dismiss((actual, rating))
+
+
+class HistoryScreen(ModalScreen[None]):
+    """Recent activity kept away from the working surface."""
+
+    BINDINGS = [("escape", "close", "Close")]
+    CSS = """
+    HistoryScreen { align: center middle; background: #090b12e8; }
+    #history-card { width: 90%; max-width: 90; height: 85%; padding: 1 2;
+        border: round #303a55; background: #151927; }
+    .history-entry { height: auto; padding: 1 0; border-bottom: solid #303a55; }
+    """
+
+    def __init__(self, rows: list[dict]) -> None:
+        super().__init__()
+        self.rows = rows
+
+    def compose(self) -> ComposeResult:
+        from datetime import datetime
+
+        with VerticalScroll(id="history-card"):
+            yield Static("Recent activity", classes="modal-title")
+            if not self.rows:
+                yield Static("No sessions yet. Your completed blocks will appear here.")
+            for row in self.rows:
+                timestamp = datetime.fromisoformat(row["started_at"]).astimezone().strftime("%b %d, %H:%M")
+                minutes = row["elapsed_seconds"] // 60
+                text = f"{timestamp} · {row['timer_kind'].replace('_', ' ')} · {minutes} min · {row['status']}"
+                if row["goal"]:
+                    text += f"\n\n{row['goal']}"
+                if row["actual"]:
+                    text += f"\n\nReflection: {row['actual']}"
+                if row["rating"] is not None:
+                    text += f"\nFocus quality: {row['rating']}/5"
+                yield Static(text, classes="history-entry", markup=False)
+            yield Button("Close", id="close-history")
+        yield CommandBar("UP/DOWN or mouse wheel scroll · ESC close")
+
+    def action_close(self) -> None:
+        self.dismiss(None)
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "close-history":
+            self.action_close()

@@ -40,6 +40,10 @@ class Database:
             );
             CREATE INDEX IF NOT EXISTS idx_sessions_started_at
                 ON sessions(started_at DESC);
+            CREATE TABLE IF NOT EXISTS drafts (
+                name TEXT PRIMARY KEY,
+                content TEXT NOT NULL
+            );
             CREATE INDEX IF NOT EXISTS idx_sessions_status
                 ON sessions(status);
             CREATE VIEW IF NOT EXISTS completed_activity AS
@@ -59,6 +63,19 @@ class Database:
         )
         self.connection.commit()
         return int(cursor.lastrowid)
+
+    def load_draft(self) -> str:
+        row = self.connection.execute(
+            "SELECT content FROM drafts WHERE name = 'intentions'"
+        ).fetchone()
+        return row[0] if row else "- [ ] "
+
+    def save_draft(self, content: str) -> None:
+        self.connection.execute(
+            "INSERT INTO drafts(name, content) VALUES ('intentions', ?) "
+            "ON CONFLICT(name) DO UPDATE SET content = excluded.content", (content,)
+        )
+        self.connection.commit()
 
     def finish_session(self, session_id: int, elapsed_seconds: int) -> None:
         self.connection.execute(

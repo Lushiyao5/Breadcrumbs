@@ -23,6 +23,7 @@ class Settings:
     sound_theme: str = "arcade"
     ui_theme: str = "midnight"
     pet_key: str = "mizan"
+    pet_enabled: bool = False
     quran_enabled: bool = True
     auto_start_breaks: bool = False
     auto_start_focus: bool = False

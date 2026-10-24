@@ -11,7 +11,9 @@ class CommandBar(Static):
     DEFAULT_CSS = """
     CommandBar {
         dock: bottom;
-        height: 1;
+        height: auto;
+        min-height: 1;
+        max-height: 3;
         background: #101522;
         color: #aab4c8;
         text-align: center;
@@ -24,6 +26,16 @@ class GoalEditor(TextArea):
     """Scrollable intention editor with lightweight Markdown checklists."""
 
     DEFAULT_TEXT = "- [ ] "
+
+    def on_focus(self) -> None:
+        self.screen.query_one(CommandBar).update(
+            "ENTER new task · CTRL+B bullet · F2 check/uncheck · ESC back to timer"
+        )
+
+    def on_blur(self) -> None:
+        self.screen.query_one(CommandBar).update(
+            "SPACE start/pause · E intentions · H history · C config · R reset · Q quit"
+        )
 
     def __init__(self, text: str = DEFAULT_TEXT, **kwargs) -> None:
         super().__init__(text, soft_wrap=True, **kwargs)
@@ -56,6 +68,12 @@ class GoalEditor(TextArea):
     def clear_goals(self) -> None:
         self.load_text(self.DEFAULT_TEXT)
         self.cursor_location = (0, len(self.DEFAULT_TEXT))
+
+    def carry_remaining(self) -> None:
+        """Keep unfinished checklist items and free-form notes for the next block."""
+        remaining = [line for line in self.text.splitlines()
+                     if not line.lstrip().startswith(("- [x]", "- [X]"))]
+        self.load_text("\n".join(remaining).strip() or self.DEFAULT_TEXT)
 
     @property
     def goal_text(self) -> str:

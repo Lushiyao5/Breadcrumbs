@@ -69,11 +69,52 @@ def test_completed_break_can_auto_start_focus(tmp_path, monkeypatch) -> None:
         app.settings.sound_enabled = False
         app.settings.auto_start_focus = True
         async with app.run_test(size=(90, 30)):
-            assert app.screen.has_class("compact")
+            assert not app.screen.has_class("compact")
             app.timer.configure(1, TimerKind.SHORT_BREAK)
             app.timer.status = TimerStatus.FINISHED
             app._complete_timer()
             assert app.timer.kind is TimerKind.FOCUS
             assert app.timer.status is TimerStatus.RUNNING
+
+    asyncio.run(exercise())
+
+
+def test_drafts_carry_forward_and_history_is_safe_during_timer(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("TLOCK_HOME", str(tmp_path))
+
+    async def exercise() -> None:
+        app = TlockApp()
+        app.settings.sound_enabled = False
+        async with app.run_test(size=(80, 24)) as pilot:
+            assert app.screen.has_class("compact")
+            assert app.screen.has_class("pet-hidden")
+            editor = app.query_one("#goal-input", GoalEditor)
+            editor.load_text("- [x] Done\n- [ ] Next\nA note")
+            await pilot.pause()
+            assert app.database.load_draft() == editor.text
+            app.action_toggle()
+            session_id = app.active_session_id
+            app.database.finish_session(session_id, 60)
+            app.active_session_id = None
+            app.completed_focuses += 1
+            app._reflection_closed(session_id, ("Made progress", 4))
+            await pilot.pause()
+            assert editor.text == "- [ ] Next\nA note"
+            assert app.database.load_draft() == editor.text
+            app.action_history()
+            await pilot.pause()
+            app._tick()
+            assert "Recent activity" in str(app.screen.query_one(".modal-title", Static).renderable)
+            await pilot.press("escape")
+            await pilot.pause()
+            app.action_edit_goals()
+            await pilot.pause()
+            assert "F2 check/uncheck" in str(app.query_one(CommandBar).renderable)
+            await pilot.press("escape")
+            await pilot.pause()
+            assert app.focused.id == "start"
+        reopened = TlockApp()
+        assert reopened.database.load_draft() == "- [ ] Next\nA note"
+        reopened.database.close()
 
     asyncio.run(exercise())
