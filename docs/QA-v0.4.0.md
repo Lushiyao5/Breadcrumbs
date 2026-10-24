@@ -65,5 +65,9 @@ verification and are reported as Unknown.
   unchanged paused blocks, and blocked underlying timer/settings shortcuts.
   Visually inspected screenshots of the welcome page and a scrollable small
   terminal feature page. The tour does not start a timer or enable capture.
+- Windows/Python 3.11 CI exposed test-driver timing assumptions: a scope
+  dialog was clicked before layout settled, and repeated tour clicks raced
+  Textual's button active effect. The tests now wait for layout/button state;
+  no timer or capture behavior was changed to accommodate the tests.
 - Built wheel/source packages and passed Twine metadata checks. This follow-up
   did not repeat the installer audit or physical Linux desktop checks above.

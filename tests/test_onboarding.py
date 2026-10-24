@@ -33,8 +33,16 @@ def test_first_launch_tour_navigation_has_no_capture_or_timer_side_effects(tmp_p
                 assert screen.step == index
                 assert str(screen.query_one("#tour-title", Static).renderable) == TOUR_STEPS[index][0]
                 assert screen.query_one("#tour-next", Button).region.bottom <= size[1]
+                # Textual intentionally ignores clicks during the button's active effect.
+                # Wait for its state, rather than relying on platform-dependent timing.
+                button = screen.query_one("#tour-next", Button)
+                for _ in range(80):
+                    if not button.has_class("-active"):
+                        break
+                    await pilot.pause(0.025)
+                assert not button.has_class("-active")
                 await pilot.click("#tour-next")
-                await pilot.pause(0.15)
+                await pilot.pause()
             assert app.screen is app._home_screen
             assert Settings.load().onboarding_version == TOUR_VERSION
             assert app.database.recent() == []

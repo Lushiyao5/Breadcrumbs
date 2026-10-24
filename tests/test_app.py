@@ -54,6 +54,7 @@ def test_app_mounts_and_starts_a_session(tmp_path, monkeypatch) -> None:
             await pilot.press("f2")
             assert editor.text.startswith("- [x]")
             await pilot.click("#start")
+            await pilot.pause()
             await pilot.click("#start-untracked")
             assert app.timer.status is TimerStatus.RUNNING
             assert app.active_session_id is not None
