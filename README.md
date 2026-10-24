@@ -1,11 +1,16 @@
 # Tlock
 
 Tlock is a terminal timer for focused work. It combines Pomodoro and custom
-timers with a checklist, end-of-session reflection, local history, an animated
-pixel pet, and optional Qur'an verses during breaks.
+timers with a checklist, end-of-session reflection, and local history. The main
+screen keeps the timer and intentions in view; history opens separately.
+An optional pixel companion and Qur'an verse cards can be enabled in Settings.
 
-Everything is stored on your machine in SQLite. Starting Tlock does not require
-an account or a network connection.
+Session history and intention drafts are stored on your machine in SQLite;
+preferences use a local JSON file. Starting Tlock does not require an account
+or a network connection.
+
+[Latest release](https://github.com/SaroashDS/Tlock/releases/latest) ·
+[What's new in v0.2.0](docs/releases/v0.2.0.md)
 
 ## Features
 
@@ -23,20 +28,17 @@ an account or a network connection.
 
 Tlock requires Python 3.11 or newer.
 
-Clone the repository, then run:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
-tlock
-```
-
-The extension matters: the installer is `install.ps1`, not `install.ps`.
-
-After the first GitHub release is published, the latest version can also be
-installed without cloning:
+Install the latest release from PowerShell:
 
 ```powershell
 irm https://raw.githubusercontent.com/SaroashDS/Tlock/main/bootstrap.ps1 | iex
+tlock
+```
+
+If you already have a checkout, install that copy instead:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
 The installer creates a private runtime under `%LOCALAPPDATA%\Tlock` and adds a
@@ -49,9 +51,24 @@ your activity history.
 On macOS, Linux, or in a development environment:
 
 ```bash
+git clone https://github.com/SaroashDS/Tlock.git
+cd Tlock
 python -m pip install .
 tlock
 ```
+
+## A focus block
+
+1. Press `E` and write your intentions. Drafts save automatically, even before
+   the timer starts. Press `Escape` when you're ready.
+2. Choose Focus, Short, Long, or a custom duration, then start the timer.
+3. Tick tasks with `F2` as you finish them. After the block, record what you
+   accomplished and optionally rate your focus.
+4. Unchecked tasks and notes carry forward. Completed tasks remain in that
+   session's history, which you can read with `H`.
+
+The companion is hidden by default. Enable **Show companion** in Settings if
+you want it on screen. Small terminals use a scrolling layout.
 
 ## Controls
 
@@ -73,6 +90,7 @@ Inside the intention editor:
 
 | Key | Action |
 | --- | --- |
+| `Enter` | Continue a checklist with a new task |
 | `Ctrl+B` | Add a checklist item |
 | `F2` | Tick or untick the item under the cursor |
 | `Escape` | Return to timer controls |
@@ -110,6 +128,9 @@ tlock update --check
 tlock update
 tlock update --status
 ```
+
+The updater runs in the background. Check its status and reopen Tlock after it
+finishes. Your session database and preferences are kept.
 
 ## Development
 
