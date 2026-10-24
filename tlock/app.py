@@ -176,7 +176,7 @@ class TlockApp(App[None]):
         self._home_query("#session-name", Input).tooltip = "Use your own name or keep the generated one."
         self._home_query("#start", Button).tooltip = "Space: start or pause. F: finish early."
         self._home_query("#focus", Button).tooltip = "P: choose a saved focus rhythm."
-        self.call_after_refresh(self._offer_recovery)
+        self._offer_recovery()
 
     def _themed(self, screen):
         screen.add_class(f"theme-{self.settings.ui_theme}")
