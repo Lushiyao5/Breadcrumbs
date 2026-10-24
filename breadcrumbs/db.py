@@ -110,7 +110,7 @@ class Database:
         if "scope_snapshot" not in span_columns:
             self.connection.execute("ALTER TABLE session_spans ADD COLUMN scope_snapshot TEXT NOT NULL DEFAULT '{}'")
         activity_columns = {row["name"] for row in self.connection.execute("PRAGMA table_info(activity_intervals)")}
-        for name in ("page_key", "agent_id"):
+        for name in ("page_key", "agent_id", "notice"):
             if name not in activity_columns:
                 self.connection.execute(f"ALTER TABLE activity_intervals ADD COLUMN {name} TEXT NOT NULL DEFAULT ''")
         self.connection.execute(
@@ -276,7 +276,8 @@ class Database:
                     return None  # wall-clock discontinuity; never create a negative duration
                 if gap <= 3:
                     self.connection.execute("UPDATE activity_intervals SET ended_at = ? WHERE id = ?", (at, previous["id"]))
-                    if previous["context_key"] == context.key and previous["classification"] == classification:
+                    if (previous["context_key"] == context.key and previous["classification"] == classification
+                            and previous["notice"] == context.notice):
                         self.connection.execute("UPDATE session_spans SET last_seen = MAX(last_seen, ?) WHERE id = ?", (at, span_id))
                         return previous["id"]
                 elif gap > 3:
@@ -290,10 +291,10 @@ class Database:
             cursor = self.connection.execute(
                 """INSERT INTO activity_intervals
                    (session_id, span_id, started_at, ended_at, app, title, domain,
-                    context_key, source, precision, classification, page_key, agent_id)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    context_key, source, precision, classification, page_key, agent_id, notice)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (session_id, span_id, at, at, context.app, context.title, context.domain,
-                 context.key, context.source, context.precision, classification, context.page_key, context.agent_id),
+                 context.key, context.source, context.precision, classification, context.page_key, context.agent_id, context.notice),
             )
             self.connection.execute("UPDATE session_spans SET last_seen = MAX(last_seen, ?) WHERE id = ?", (at, span_id))
             return int(cursor.lastrowid)

@@ -288,6 +288,8 @@ class IntegratedSource:
                 problem = "No focused web tab reported · check extension sharing and page permissions"
             else:
                 problem = "Browser window/tab match is ambiguous · check the active browser profile"
+            if state is not None and any(not record.get("extension_version") for record in state.browser_records()):
+                problem = "An old browser extension is still reporting · Reload Breadcrumbs in chrome://extensions"
             return Context(native.app, "", identity=native.identity, source=native.source,
                            status="unknown" if narrowed else "active",
                            notice=problem, precision="window")

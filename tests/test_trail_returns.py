@@ -86,6 +86,8 @@ def test_deviation_label_is_used_in_details_and_annotation_keys(tmp_path, monkey
             screen.query_one("#trail", OptionList).highlighted = 0
             await pilot.pause()
             assert "Deviation" in str(screen.query_one("#branch-info", Static).renderable)
+            assert "Codicons" not in str(screen.query_one("#branch-info", Static).renderable)
+            assert "indicator" not in str(screen.query_one("#branch-info", Static).renderable)
             await pilot.press("a")
             assert "In scope" in str(screen.query_one("#branch-info", Static).renderable)
             await pilot.press("v")

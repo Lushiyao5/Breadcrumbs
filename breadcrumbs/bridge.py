@@ -16,6 +16,7 @@ from pathlib import Path
 
 from .activity import clean
 from .config import data_dir
+from . import __version__
 
 MAX_BODY = 65_536
 FRESH_SECONDS = 45
@@ -140,7 +141,13 @@ class BridgeState:
             timer = dict(self.timer) if self.timer else None
             if timer and (time.monotonic() - self.timer_seen > 3 or self.stopping):
                 timer["can_control"] = False
-            return dict(version=1, pairing=True, active=self.active and owner_fresh and not self.stopping,
+            now = time.monotonic()
+            records = [record for record in self.profiles.values() if now - record["received_at"] <= FRESH_SECONDS]
+            browser = dict(reports=len(records), focused=sum(bool(record["focused"]) for record in records),
+                versions=sorted({record.get("extension_version") or "unreported" for record in records}),
+                last_report_seconds=round(min((now-record["received_at"] for record in records), default=0), 1) if records else None)
+            return dict(version=1, app_version=__version__, required_extension_version=__version__, browser_diagnostics=browser,
+                        pairing=True, active=self.active and owner_fresh and not self.stopping,
                         inventory_requested=time.monotonic() < self.inventory_until and not self.stopping,
                         include_titles=self.include_titles, stopping=self.stopping, timer=timer)
 
@@ -163,6 +170,7 @@ class BridgeState:
                           sent_at=sent_at, received_at=time.monotonic(), focused=False,
                           tab_id=None, window_id=None, domain="", title="", page_key="", title_key="",
                           incognito=bool(payload.get("incognito")), tabs=[])
+            record["extension_version"] = _identifier(payload["extension_version"], 40) if payload.get("extension_version") else ""
             # Closed/paused sessions do not retain incoming metadata, even from a stale extension.
             if permitted:
                 record["focused"] = payload.get("focused") is True

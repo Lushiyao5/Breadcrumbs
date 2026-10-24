@@ -158,6 +158,7 @@ export class BrowserBridge {
     return {
       ...await this.identities,
       browser: "chrome",
+      extension_version: this.api.runtime.getManifest?.().version || "unreported",
       focused: false,
       tab_id: null,
       window_id: null,
@@ -350,6 +351,10 @@ export class BrowserBridge {
       endpoint: config ? config.endpoint : "",
       connection_state: config ? this.connectionState : "not_paired",
       browser_state: config ? this.browserState : "idle",
+      app_version: this.serverStatus?.app_version || "",
+      extension_version: this.api.runtime.getManifest?.().version || "",
+      extension_update_required: Boolean(this.serverStatus?.required_extension_version &&
+        this.api.runtime.getManifest?.().version !== this.serverStatus.required_extension_version),
       active: Boolean(config && config.enabled && this.serverStatus && this.serverStatus.active),
       inventory_requested: Boolean(config && config.enabled && this.serverStatus && this.serverStatus.inventory_requested),
       last_contact: this.lastContact,

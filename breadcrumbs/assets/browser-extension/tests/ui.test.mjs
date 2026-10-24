@@ -83,6 +83,17 @@ test("browser panel shows the actual reported tab and clears it when sharing sto
   assert.match(ui.nodes.get("timer-name").textContent, /calm-otter/);
 });
 
+test("an extension build mismatch is actionable without disabling a healthy timer", async () => {
+  const ui = uiFixture();
+  await settle();
+  ui.state.extension_update_required = true;
+  ui.poll();
+  await settle();
+  assert.match(ui.nodes.get("build-status").textContent, /Reload this extension/);
+  assert.equal(ui.nodes.get("timer-state").textContent, "RUNNING");
+  assert.equal(ui.nodes.get("timer-primary").disabled, false);
+});
+
 test("Finish requires the inline second click and preserves its session binding", async () => {
   const ui = uiFixture();
   await settle();

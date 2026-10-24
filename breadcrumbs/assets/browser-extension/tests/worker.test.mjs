@@ -9,6 +9,16 @@ if (!globalThis.crypto) globalThis.crypto = webcrypto;
 const TOKEN = "test-local-token-123456789";
 const ENDPOINT = "http://127.0.0.1:43127";
 
+test("reports carry the actually loaded extension version and expose mismatches", async () => {
+  const f = fixture({status: {active: true, app_version: "0.4.2", required_extension_version: "0.4.2"}});
+  f.api.runtime.getManifest = () => ({version: "0.4.1"});
+  await f.bridge.sync();
+  assert.equal(f.posts().at(-1).payload.extension_version, "0.4.1");
+  assert.equal((await f.bridge.state()).extension_update_required, true);
+  f.api.runtime.getManifest = () => ({version: "0.4.2"});
+  assert.equal((await f.bridge.state()).extension_update_required, false);
+});
+
 test("reported tab preview follows navigation and immediately honors title consent", async () => {
   const tabs = [tab()];
   const f = fixture({status: {active: true, include_titles: true}, tabs});

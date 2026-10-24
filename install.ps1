@@ -48,6 +48,10 @@ Write-Host "  Installing Breadcrumbs and its terminal UI..." -ForegroundColor Da
 if ($LASTEXITCODE -ne 0) {
     throw "Package installation failed. Check your internet connection and try again."
 }
+& $virtualPython -m breadcrumbs.browser_install
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  Browser extension compatibility refresh needs attention; use Config > Browser connection." -ForegroundColor Yellow
+}
 
 $windowsApps = Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps"
 $launcherPath = Join-Path $windowsApps "breadcrumbs.cmd"

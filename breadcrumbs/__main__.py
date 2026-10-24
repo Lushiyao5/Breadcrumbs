@@ -15,7 +15,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command")
     subparsers.add_parser("sessions", help="List resumable saved blocks")
     browser = subparsers.add_parser("browser", help="Set up the bundled browser extension")
-    browser.add_argument("action", choices=("path", "setup"), default="setup", nargs="?")
+    browser.add_argument("action", choices=("path", "setup", "repair"), default="setup", nargs="?")
     export = subparsers.add_parser("export", help="Export local activity as JSON")
     export.add_argument("--limit", type=int, default=None)
     export.add_argument("--output", type=Path, default=None)
@@ -92,6 +92,9 @@ def main() -> None:
             database.close()
         return
     if args.command == "browser":
+        if args.action == "repair":
+            from .browser_install import main as repair
+            raise SystemExit(repair())
         from importlib.resources import files
         print(str(files("breadcrumbs") / "assets" / "browser-extension"))
         if args.action == "setup":
@@ -139,6 +142,12 @@ def main() -> None:
                 parser.error("That name is already used. Resume it with --resume or choose another name.")
         finally:
             database.close()
+    from .browser_install import refresh_installed_compatibility
+    try:
+        if refresh_installed_compatibility():
+            print("Browser extension files updated. Reload the extension in Chrome/Edge to activate them.")
+    except (OSError, ValueError):
+        print("Browser extension folder could not be refreshed. Check Config > Browser connection.")
     app = BreadcrumbsApp(resume_name=args.resume, session_name=args.name, show_onboarding=True)
     app.run()
     if app.resume_hint:

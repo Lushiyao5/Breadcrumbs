@@ -244,6 +244,21 @@ def test_browser_window_fallback_never_persists_unverified_private_titles():
     assert source.sample().title == ""
 
 
+def test_old_extension_reports_are_identified_in_status_and_missing_tab_notice():
+    state = BridgeState()
+    state.publish(True, True)
+    state.receive_browser(event())
+    assert state.status()["browser_diagnostics"]["versions"] == ["unreported"]
+    class Desktop:
+        def sample(self): return Context("chrome.exe", title_keys=window_title_keys("Another page - Google Chrome"))
+    source = IntegratedSource(Settings(activity_domains=["python.org"]), SimpleNamespace(state=state), Desktop())
+    assert "old browser extension" in source.sample().notice
+    from breadcrumbs import __version__
+    state.receive_browser(event(extension_version=__version__))
+    assert state.status()["browser_diagnostics"]["versions"] == [__version__]
+    assert "old browser extension" not in source.sample().notice
+
+
 @pytest.mark.parametrize("window_title", ["Python docs — Google Chrome", "Python docs – Microsoft Edge",
     "Python docs | Brave", "Python docs - Google Chrome - Work profile", "Python docs — Mozilla Firefox"])
 def test_browser_title_variants_correlate_the_actual_reported_tab(window_title):

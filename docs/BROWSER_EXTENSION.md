@@ -27,6 +27,15 @@ After an update, use Chrome's **Reload** button for the unpacked extension if
 Chrome is still running the older files. If Breadcrumbs changes its connection URL or
 token, pair again with the current values.
 
+If Chrome is still loading an extension from an older runtime folder, an app
+update refreshes that known folder without editing Chrome preferences or
+pairing storage. Reload the extension afterward. You can explicitly repair
+the files with `breadcrumbs browser repair`; it does not reload Chrome for you.
+The popup displays app/extension versions, and Config warns about old reports.
+In particular, old extension 0.2.0 reports can continue working intermittently
+while missing newer status/reporting fixes—updating the app alone does not
+activate new code in an already-loaded extension worker.
+
 **Start sharing** makes the profile available to Breadcrumbs. It does not override
 the timer's capture gate. **Stop sharing** sends an empty foreground update and
 stops browser tab reports. **Disconnect** also removes the saved URL and

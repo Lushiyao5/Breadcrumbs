@@ -85,6 +85,9 @@ function paint(state, fresh = true) {
     timerSampleAt = performance.now();
   }
   const status = element("status");
+  element("build-status").textContent = state.extension_update_required ?
+    "Reload this extension in chrome://extensions or edge://extensions to activate the updated build." :
+    (state.app_version && state.extension_version ? `App ${state.app_version} · Extension ${state.extension_version}` : "");
   status.dataset.state = state.connection_state;
   if (!state.paired) {
     status.textContent = "Not paired";

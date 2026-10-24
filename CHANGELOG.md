@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.2 — Current browser build, cleaner branch details · 2026-10-25
+
+- Fix the legacy unpacked-extension path left behind by the runtime rename:
+  installers, future updater helpers, and installed app startup refresh known
+  old extension folders. Pairing storage and Chrome preferences stay untouched.
+  A Chrome/Edge extension reload is still required to activate new files.
+- Add `breadcrumbs browser repair`, loaded extension version reporting,
+  app/extension version display, and an old-build notice in Config.
+- Preserve capture diagnostic messages in activity records so new Unknown
+  visits can explain missing reports or an old extension instead of only
+  saying that the window was captured.
+- Remove artwork attribution strings from activity details. Attribution remains
+  in the bundled notices and documentation.
+- Open clicked/Enter-selected activity in a sidebar, with a smaller bounded
+  branch card. Escape collapses details; Ctrl+Enter keeps the full-screen option.
+  Compact details remain readable at 80×24.
+
 ## 0.4.1 — Keep the session, follow the trail · 2026-10-25
 
 ### Fixed

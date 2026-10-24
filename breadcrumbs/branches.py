@@ -303,9 +303,14 @@ def visit_details(database, row):
     label = row.get("annotation") or row["classification"]
     start = datetime.fromtimestamp(row["started_at"]).strftime("%Y-%m-%d %H:%M:%S")
     end = datetime.fromtimestamp(row["ended_at"]).strftime("%H:%M:%S")
-    text = f"{brand.label}\n{row['domain']}\n{row['title']}\n\n"
+    text = "\n".join(value for value in (brand.label, row["domain"], row["title"]) if value) + "\n\n"
     text += f"{activity_label(label)} · {duration(row['ended_at'] - row['started_at'])}\n{start} → {end}\n"
-    text += f"{row['source']} · {row['precision']}\n\n"
+    capture = {"window": "App window", "tab": "Browser tab", "browser-focus": "Browser focus",
+               "terminal-marker": "Verified terminal agent", "block": "Timer"}.get(row["precision"], "Activity")
+    text += f"Captured: {capture}\n\n"
+    if row.get("notice") and row["notice"] not in ("Desktop window", "Bundled browser bridge",
+            "Verified process + active terminal title marker"):
+        text += row["notice"] + "\n\n"
     hint = terminal_hint(row["app"], row["title"])
     if hint:
         text += f"Terminal host: {row['app']}\nProgram hint: {brand.label} (window title; not process verified)\n\n"
@@ -323,7 +328,7 @@ def visit_details(database, row):
         text += "Timer span · no app/browser capture during breaks.\n\n" if label == "break" else "Timer span · no activity observations recorded.\n\n"
     else:
         text += "A in scope\nS supporting detour\nV deviation\n\n"
-    return brand, text + brand.mark_name
+    return brand, text.rstrip()
 
 
 class ActivityDetailScreen(ModalScreen[None]):
@@ -378,31 +383,35 @@ class ActivityDetailScreen(ModalScreen[None]):
 
 class BranchesScreen(ModalScreen[None]):
     BINDINGS = [
-        ("escape", "close", "Close"), ("b", "close", "Close"),
+        ("escape", "back", "Back"), ("b", "close", "Close"),
         ("s", "supporting", "Supporting"), ("a", "planned", "In scope"),
         ("v", "deviation", "Deviation"), ("u", "deviation", "Deviation"),
         ("end", "latest", "Latest activity"),
+        ("ctrl+enter", "full_detail", "Full activity details"),
     ]
     CSS = """
     BranchesScreen { align: center middle; background: #090b12e8; }
-    #branches-card { width: 96%; height: 94%; padding: 1 2;
+    #branches-card { width: 94%; max-width: 132; height: 84%; max-height: 38; padding: 1 2;
         background: #131827; border: round #70e1c1; }
-    #branches-heading { height: 2; text-style: bold; color: #70e1c1; }
+    #branches-heading { height: 1; text-style: bold; color: #70e1c1; }
     #branch-session { height: 3; }
-    #branches-note { height: auto; max-height: 4; color: #aab4c8; margin-bottom: 1; }
+    #branches-note { height: auto; max-height: 2; color: #aab4c8; margin-bottom: 1; }
     #branches-body { height: 1fr; }
     #trail { width: 1fr; height: 1fr; border: none; background: #0d111d; }
     #trail > .option-list--option-highlighted { background: #20384a; color: #edf2f7; }
-    #branch-detail { width: 30; padding: 0 1; overflow-y: auto; border-left: solid #303a55; }
+    #branch-detail { display: none; width: 40; padding: 0 1; overflow-y: auto; border-left: solid #303a55; }
+    BranchesScreen.expanded #branch-detail { display: block; }
+    #branch-detail-heading { height: auto; color: #70e1c1; margin-bottom: 1; }
     #branch-logo { height: 8; margin-bottom: 1; }
     #branch-info { height: auto; }
     #branch-actions { height: 3; grid-size: 3; grid-gutter: 1; margin-top: 1; }
     #branch-actions Button { min-width: 8; }
-    BranchesScreen.narrow #branches-body { layout: vertical; }
-    BranchesScreen.narrow #branch-detail { width: 100%; height: 7; layout: horizontal; }
-    BranchesScreen.narrow #branch-logo { width: 18; height: 7; }
-    BranchesScreen.narrow #branch-info { width: 1fr; }
-    BranchesScreen.short #branch-detail { display: none; }
+    BranchesScreen.narrow #branch-detail { width: 30; }
+    BranchesScreen.short #branches-card { height: 90%; padding: 0 1; }
+    BranchesScreen.short #branches-note { display: none; }
+    BranchesScreen.short #branch-detail-heading { height: 1; margin-bottom: 0; }
+    BranchesScreen.short #branch-actions { margin-top: 0; }
+    BranchesScreen.short #branch-logo { height: 1; margin-bottom: 0; }
     """
 
     def __init__(self, database, session_id: int | None = None):
@@ -427,13 +436,14 @@ class BranchesScreen(ModalScreen[None]):
             with Horizontal(id="branches-body"):
                 yield OptionList(id="trail")
                 with VerticalScroll(id="branch-detail"):
+                    yield Static("Activity details", id="branch-detail-heading", markup=False)
                     yield Static("", id="branch-logo")
                     yield Static("Select a visit to inspect its context.", id="branch-info", markup=False)
             with Grid(id="branch-actions"):
                 yield Button("Latest", id="branch-latest")
                 yield Button("Scope / source", id="branch-scope")
                 yield Button("Close", id="branch-close")
-        yield CommandBar("↑↓ visits · ENTER/click details · END latest · A/S/V label · ESC close")
+        yield CommandBar("↑↓ visits · ENTER/click sidebar · CTRL+ENTER full · END latest · A/S/V label · ESC back")
 
     def on_mount(self):
         self.set_class(self.size.width < 100, "narrow")
@@ -448,7 +458,8 @@ class BranchesScreen(ModalScreen[None]):
     def on_resize(self):
         self.set_class(self.size.width < 100, "narrow")
         self.set_class(self.size.height < 32, "short")
-        self.call_after_refresh(self._scroll_latest)
+        self.call_after_refresh(self._detail)
+        self.call_after_refresh(self._keep_selection_visible)
 
     def on_select_changed(self, event: Select.Changed):
         if event.select.id == "branch-session":
@@ -503,13 +514,20 @@ class BranchesScreen(ModalScreen[None]):
             return
         row = self._rows[options.highlighted]
         brand, text = visit_details(self.database, row)
-        self.query_one("#branch-logo", Static).update(render_logo(brand))
+        self.query_one("#branch-logo", Static).update(render_logo(brand, compact=self.has_class("short")))
         self.query_one("#branch-info", Static).update(text)
 
     def _scroll_latest(self):
         options = self.query_one("#trail", OptionList)
         if options.highlighted == options.option_count - 1:
             options.scroll_end(animate=False)
+
+    def _keep_selection_visible(self):
+        options = self.query_one("#trail", OptionList)
+        if options.highlighted == options.option_count - 1:
+            self._scroll_latest()
+        else:
+            options.scroll_to_highlight()
 
     def action_latest(self):
         options = self.query_one("#trail", OptionList)
@@ -521,7 +539,21 @@ class BranchesScreen(ModalScreen[None]):
         event.stop()
         row = next((row for row in self._rows if str(row["id"]) == event.option.id), None)
         if row is not None:
-            self.app.push_screen(self.app._themed(ActivityDetailScreen(self.database, row)))
+            self.add_class("expanded")
+            self._detail()
+            self.call_after_refresh(self._keep_selection_visible)
+
+    def action_full_detail(self):
+        options = self.query_one("#trail", OptionList)
+        if options.highlighted is not None and options.highlighted < len(self._rows):
+            self.app.push_screen(self.app._themed(ActivityDetailScreen(self.database, self._rows[options.highlighted])))
+
+    def action_back(self):
+        if self.has_class("expanded"):
+            self.remove_class("expanded")
+            self.query_one("#trail", OptionList).focus()
+        else:
+            self.action_close()
 
     def on_option_list_option_highlighted(self, event: OptionList.OptionHighlighted):
         self._detail()

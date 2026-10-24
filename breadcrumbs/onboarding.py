@@ -60,7 +60,7 @@ TOUR_STEPS = (
      "Select a visit: A marks In scope, S marks Supporting, V marks Deviation. Unknown, away, "
      "and excluded observations keep their labels. Return to matching context to rejoin "
      "the main lane. Breaks appear in the same session timeline without capture. Click a visit "
-     "or press Enter for expanded details, even on small terminals. End / Latest returns to "
+     "or press Enter for sidebar details; Escape collapses it and Ctrl+Enter opens a full view. End / Latest returns to "
      "the newest activity. The selector reviews older sessions."),
     ("Pause, leave, and recover", "Space pauses without ending the block. Q saves and quits. "
      "Reopen Breadcrumbs to choose a saved block; recovery opens paused.\n\n"

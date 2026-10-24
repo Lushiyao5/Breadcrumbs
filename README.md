@@ -248,11 +248,13 @@ older visit to inspect it without being pulled back by live updates; press
 **End** or **Latest** to return. Breaks appear in the same session timeline
 without collecting app or browser activity.
 
-Click a visit or press **Enter** for a full, scrollable activity detail screen,
-including on small terminals. It shows the logo, title/domain, timestamps,
-duration, capture precision, and annotations.
+Click a visit or press **Enter** to expand its scrollable details in a sidebar
+while keeping the branch list visible. `Escape` collapses it; `Ctrl+Enter`
+opens a full detail screen when you want more space. The compact branch card
+shows the logo, title/domain, timestamps, duration, capture precision, and
+annotations, without artwork credits in the activity UI.
 
-![Expanded activity details after selecting a visit](docs/assets/activity-details.png)
+![Activity details open beside the branch list](docs/assets/activity-details.png)
 
 Terminal titles that explicitly identify Codex, Claude Code, Python, Node.js,
 Git, or Neovim can show the corresponding logo as a **title hint**. These are

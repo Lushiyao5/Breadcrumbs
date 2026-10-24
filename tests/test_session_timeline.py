@@ -159,18 +159,26 @@ def test_latest_follow_preserves_older_selection_and_opens_details_on_small_term
             await pilot.pause()
             assert screen._rows[trail.highlighted]["id"] == selected
             await pilot.press("enter")
+            await pilot.pause()
+            assert app.screen is screen and screen.has_class("expanded")
+            assert screen.query_one("#branch-detail").region.x > trail.region.x
+            assert screen.query_one("#branch-logo", Static).renderable.plain.strip()
+            assert "app-10" in str(screen.query_one("#branch-info", Static).renderable)
+            await pilot.press("ctrl+enter")
             assert isinstance(app.screen, ActivityDetailScreen)
             assert app.screen.query_one("#visit-logo", Static).renderable.plain.strip()
             assert "app-10" in str(app.screen.query_one("#visit-info", Static).renderable)
             await pilot.press("s")
             assert app.database.activity_label(selected) == "supporting"
             await pilot.press("escape")
+            await pilot.press("escape")  # collapse sidebar
             await pilot.press("end")
             await pilot.pause()
             assert trail.highlighted == trail.option_count - 1
             assert trail.scroll_y == trail.max_scroll_y
             # Mouse activation opens the same expanded view.
             await pilot.click("#trail", offset=(3, max(0, trail.region.height - 2)))
-            assert isinstance(app.screen, ActivityDetailScreen)
+            await pilot.pause()
+            assert app.screen is screen and screen.has_class("expanded")
 
     asyncio.run(exercise())

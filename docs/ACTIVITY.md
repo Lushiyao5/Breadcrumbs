@@ -103,9 +103,11 @@ remain separate from the source observation. Away, excluded, and unknown
 observations retain their labels.
 
 The view follows the latest activity until you select an older visit. Press
-End or **Latest** to resume following. Click or Enter opens a full detail view
-with the logo, timestamps, title/domain, source precision, and annotation keys;
-this also works when the compact sidebar is hidden on a small terminal.
+End or **Latest** to resume following. Click or Enter expands a detail sidebar
+with the logo, timestamps, title/domain, capture type, and annotation keys.
+Escape collapses it. Ctrl+Enter opens a separate full detail screen.
+The branch card is bounded on large terminals and uses compact details on
+small terminals. Artwork attribution is in BRANDS.md rather than activity text.
 
 Work blocks and short/long breaks belong to the same named session. Break
 running spans appear in its timeline without collecting app/browser metadata.

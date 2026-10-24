@@ -28,6 +28,9 @@ def main() -> int:
     ]
     with log_path.open("w", encoding="utf-8") as log:
         result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=False)
+        if result.returncode == 0:
+            subprocess.run([sys.executable, "-m", "breadcrumbs.browser_install"],
+                           stdout=log, stderr=subprocess.STDOUT, check=False)
     payload = {
         "status": "complete" if result.returncode == 0 else "failed",
         "version": target_version,

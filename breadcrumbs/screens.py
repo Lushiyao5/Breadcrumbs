@@ -129,7 +129,11 @@ class SettingsScreen(ModalScreen[Settings | None]):
     def refresh_connection(self):
         bridge = getattr(self.app, "_bridge", None)
         connected = bridge is not None and bridge.state.client_connected()
+        from . import __version__
+        versions = bridge.state.status().get("browser_diagnostics", {}).get("versions", []) if bridge else []
+        outdated = connected and any(version != __version__ for version in versions)
         self.query_one("#browser-connection-status", Static).update(
+            "Old extension detected · reload it in chrome://extensions / edge://extensions" if outdated else
             "Browser connected · session sync active" if connected else
             "Open Browser connection to pair or reconnect the extension"
         )
