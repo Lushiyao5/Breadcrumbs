@@ -6,6 +6,52 @@ from breadcrumbs.app import BreadcrumbsApp
 from breadcrumbs.bridge import BridgeState, ControlConflict
 from breadcrumbs.timer import TimerStatus
 
+def test_untracked_running_block_publishes_timer_without_browser_capture(tmp_path, monkeypatch):
+    monkeypatch.setenv("BREADCRUMBS_HOME", str(tmp_path))
+
+    async def exercise():
+        app = BreadcrumbsApp(session_name="untracked-remote")
+        app.settings.browser_bridge_port = 0
+        async with app.run_test() as pilot:
+            assert app._bridge is None
+            app._begin_block()
+            status = app._bridge.state.status()
+            assert status["active"] is False
+            assert status["timer"]["status"] == "running"
+            assert status["timer"]["name"] == "untracked-remote"
+            assert status["timer"]["session_id"] == app.active_session_id
+            assert app._activity_future is None
+            app.action_toggle()
+            assert app._bridge.state.status()["timer"]["status"] == "paused"
+
+    asyncio.run(exercise())
+
+
+def test_timer_bridge_retries_after_another_instance_releases_the_port(tmp_path, monkeypatch):
+    monkeypatch.setenv("BREADCRUMBS_HOME", str(tmp_path))
+    from breadcrumbs.bridge import BridgeServer
+    attempts = []
+
+    def create(port):
+        attempts.append(port)
+        if len(attempts) == 1:
+            raise OSError("Address in use")
+        return BridgeServer(0)
+
+    monkeypatch.setattr("breadcrumbs.app.BridgeServer", create)
+
+    async def exercise():
+        app = BreadcrumbsApp()
+        async with app.run_test():
+            app._begin_block()
+            assert app._bridge is None and app._bridge_failed
+            app._bridge_retry_after = 0
+            app._publish_bridge()
+            assert app._bridge is not None and not app._bridge_failed
+            assert app._bridge.state.status()["timer"]["status"] == "running"
+            assert not app._bridge.state.status()["active"]
+
+    asyncio.run(exercise())
 
 def test_remote_controls_reject_stale_identity_and_do_not_change_with_countdown():
     state = BridgeState()

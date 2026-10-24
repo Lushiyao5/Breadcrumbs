@@ -64,6 +64,12 @@ type and square controls. Game Boy and Sunset colors follow the paired
 timer's theme. Status is polled every four seconds while the popup/options
 page is open; the displayed running clock interpolates between those updates.
 
+The Browser context panel shows the last successfully reported tab title and
+domain. When title sharing is off it shows the domain instead. Stale, private,
+internal, unfocused, or stopped-sharing context clears that preview. The timer
+remains independent of tab collection, including for untracked running blocks.
+The app retries a busy bridge port after another instance closes.
+
 ![Breadcrumbs extension controlling a running focus block](assets/browser-extension.png)
 
 *Captured from the real extension during an isolated TUI integration test.*
@@ -111,7 +117,7 @@ update. Losing Chrome focus immediately sends `focused: false` with empty
 metadata. Inventory can still be supplied if the user has the scope picker
 open, but it does not count as foreground tab time.
 
-While the service worker is awake, a ten-second heartbeat refreshes state.
+While the service worker is awake, a two-second heartbeat refreshes state.
 A Chrome alarm requests a refresh every thirty seconds as a fallback. Manifest
 V3 workers can be suspended and alarms can be delayed, so these are not exact
 timing guarantees. Breadcrumbs must treat stale or disconnected browser context as

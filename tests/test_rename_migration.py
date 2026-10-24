@@ -1,4 +1,5 @@
 from pathlib import Path
+import tomllib
 
 from breadcrumbs.config import Settings, data_dir
 from breadcrumbs.db import Database
@@ -46,7 +47,8 @@ def test_new_database_defaults_and_release_identity(tmp_path, monkeypatch):
     db = Database()
     assert db.path.name == "breadcrumbs.db"
     db.close()
-    assert __version__ == "0.4.0"
+    project = tomllib.loads((Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(encoding="utf-8"))
+    assert __version__ == project["project"]["version"]
     monkeypatch.delenv("BREADCRUMBS_REPOSITORY", raising=False)
     monkeypatch.setenv("TLOCK_REPOSITORY", "legacy/repository")
     assert updater.repository() == "legacy/repository"

@@ -103,7 +103,10 @@ function paint(state, fresh = true) {
     element("detail").textContent = "Normal web tabs are shared while you choose the scope in Breadcrumbs.";
   } else if (state.active) {
     status.textContent = "Focus context connected";
-    element("detail").textContent = "The focused normal Chrome tab is available to this focus block.";
+    const tab = state.tab_context;
+    element("detail").textContent = tab ?
+      ((tab.title || tab.domain) + " · " + tab.domain + (tab.title_shared ? "" : " · title sharing is off")) :
+      "Waiting for a focused web tab. Check sharing, site permissions, and that the page is not private/internal.";
   } else {
     status.textContent = "Paired · ready";
     element("detail").textContent = "No tab details are shared until a tracked block runs or the scope picker requests them.";

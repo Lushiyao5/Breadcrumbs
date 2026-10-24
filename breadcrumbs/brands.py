@@ -45,6 +45,10 @@ BRANDS = {
     "codex": Brand("codex", "Codex", "#C4A7FF", "openai", "OpenAI company mark; not a Codex-specific logo"),
     "chatgpt": Brand("chatgpt", "ChatGPT", "#9ACD66", "openai", "OpenAI company mark"),
     "github": Brand("github", "GitHub", "#F0F6FC", "github", "GitHub Octocat mark"),
+    "python": Brand("python", "Python", "#3776AB", "python", "Python mark"),
+    "nodejs": Brand("nodejs", "Node.js", "#5FA04E", "nodedotjs", "Node.js mark"),
+    "git": Brand("git", "Git", "#F05032", "git", "Git mark"),
+    "neovim": Brand("neovim", "Neovim", "#57A143", "neovim", "Neovim mark"),
     "terminal": Brand("terminal", "Terminal", "#AAB4C8", "terminal", "Generic Microsoft Codicons terminal indicator"),
     "generic": Brand("generic", "Application", "#AAB4C8", "window", "Generic Microsoft Codicons window indicator"),
 }
@@ -77,6 +81,13 @@ _APP_ALIASES = {
     "github": "github",
     "githubdesktop": "github",
     "github desktop": "github",
+    "python": "python",
+    "python3": "python",
+    "node": "nodejs",
+    "nodejs": "nodejs",
+    "git": "git",
+    "nvim": "neovim",
+    "neovim": "neovim",
     "windowsterminal": "terminal",
     "windowsterminalpreview": "terminal",
     "windows terminal": "terminal",
@@ -150,6 +161,13 @@ def _app_color(identity: str) -> str:
     saturation = 0.45 + digest[4] / 255 * 0.2
     rgb = colorsys.hsv_to_rgb(hue, saturation, 0.95)
     return "#" + "".join(f"{round(channel * 255):02X}" for channel in rgb)
+
+
+def activity_brand(row: dict) -> Brand:
+    """A title hint changes presentation only; recorded identity stays intact."""
+    from .terminal import terminal_hint
+    hint = terminal_hint(row["app"], row.get("title", ""))
+    return BRANDS[hint] if hint else brand_for(row["app"], row.get("domain", ""))
 
 
 @lru_cache(maxsize=1)

@@ -340,7 +340,7 @@ class HistoryScreen(ModalScreen[None]):
                 status = {"abandoned": "ended", "running": "in progress"}.get(row["status"], row["status"])
                 text = f"{timestamp} · {row['timer_kind'].replace('_', ' ')} · {minutes} min · {status}"
                 if row.get("name"):
-                    text = f"{row['name']}\n{text}"
+                    text = f"{row.get('session_name') or row['name']}\n{text}"
                 if row.get("completion_reason") == "early":
                     text += " · finished early"
                 if row["goal"]:

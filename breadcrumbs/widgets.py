@@ -130,7 +130,7 @@ class GoalEditor(TextArea):
 
     def on_blur(self) -> None:
         self.screen.query_one(CommandBar).update(
-            "SPACE start/pause · B branches · E intentions · H history · C config · R reset · Q quit"
+            "SPACE start/pause · B branches · E intentions · H history · C config · CTRL+N new session · ? tour · Q quit"
         )
 
     def __init__(self, text: str = DEFAULT_TEXT, **kwargs) -> None:

@@ -69,6 +69,20 @@ async function settle() {
   for (let i = 0; i < 8; i++) await Promise.resolve();
 }
 
+test("browser panel shows the actual reported tab and clears it when sharing stops", async () => {
+  const ui = uiFixture();
+  await settle();
+  ui.state.tab_context = {title: "Python documentation", domain: "docs.python.org", title_shared: true};
+  ui.poll();
+  await settle();
+  assert.match(ui.nodes.get("detail").textContent, /Python documentation/);
+  assert.match(ui.nodes.get("detail").textContent, /docs.python.org/);
+  ui.click("stop");
+  await settle();
+  assert.doesNotMatch(ui.nodes.get("detail").textContent, /Python documentation/);
+  assert.match(ui.nodes.get("timer-name").textContent, /calm-otter/);
+});
+
 test("Finish requires the inline second click and preserves its session binding", async () => {
   const ui = uiFixture();
   await settle();

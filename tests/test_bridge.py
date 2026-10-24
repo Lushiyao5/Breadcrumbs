@@ -242,3 +242,20 @@ def test_browser_window_fallback_never_persists_unverified_private_titles():
         def sample(self): return Context("chrome.exe", title="Private browsing fixture")
     source = IntegratedSource(Settings(activity_titles=True), None, Desktop())
     assert source.sample().title == ""
+
+
+@pytest.mark.parametrize("window_title", ["Python docs — Google Chrome", "Python docs – Microsoft Edge",
+    "Python docs | Brave", "Python docs - Google Chrome - Work profile", "Python docs — Mozilla Firefox"])
+def test_browser_title_variants_correlate_the_actual_reported_tab(window_title):
+    state = BridgeState()
+    state.publish(True, True)
+    state.receive_browser(event())
+    class Desktop:
+        def sample(self):
+            return Context("chrome.exe", title_keys=window_title_keys(window_title))
+    source = IntegratedSource(Settings(), SimpleNamespace(state=state), Desktop())
+    context = source.sample()
+    assert context.title == "Python docs" and context.domain == "docs.python.org"
+    assert context.precision == "tab"
+    state.receive_browser(event(profile_id="other-profile"))
+    assert source.sample().precision == "window"  # still no guessing across ambiguous profiles

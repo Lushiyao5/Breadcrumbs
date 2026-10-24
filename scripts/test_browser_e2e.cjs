@@ -8,7 +8,7 @@ const assert = require('node:assert/strict');
 
 async function main() {
   const pythonPath = process.env.BREADCRUMBS_TEST_PYTHON || resolve(process.platform === 'win32' ? '.venv/Scripts/python.exe' : '.venv/bin/python');
-  const python = spawn(pythonPath, ['scripts/browser_e2e_host.py'], {stdio: ['pipe','pipe','inherit']});
+  const python = spawn(pythonPath, ['-X', 'utf8', 'scripts/browser_e2e_host.py'], {stdio: ['pipe','pipe','inherit']});
   const exited = new Promise(resolve=>python.once('exit', resolve));
   const messages = [], waiting = [];
   createInterface({input: python.stdout}).on('line', line => {
@@ -70,17 +70,26 @@ async function main() {
     };
     let result = await until(value => value.tabs.some(tab=>tab.domain==='docs.python.org'), 'tab inventory');
     assert(!JSON.stringify(result).includes('fixture=private'));
-    await command({command:'desktop', context:{app:'chrome.exe',title:'Python docs fixture - Google Chrome'}});
+    await command({command:'desktop', context:{app:'chrome.exe',title:'Python docs fixture — Google Chrome - Work profile'}});
     await command({command:'policy', active:true, inventory:false});
     await docs.bringToFront();
     result = await until(value => value.rows.some(row=>row.domain==='docs.python.org' && row.classification==='planned'), 'planned docs tab');
     assert.equal(result.scope.domains.length, 0);
     assert.equal(result.scope.pages.length, 1);
+    await command({command:'policy', active:true, titles:true});
+    await docs.bringToFront();
+    result = await until(value => value.rows.at(-1)?.title==='Python docs fixture', 'exact browser tab title is recorded');
+    let preview = await sync();
+    assert.equal(preview.state.tab_context.title, 'Python docs fixture');
+    assert.equal(preview.state.tab_context.domain, 'docs.python.org');
     const video = await context.newPage();
     await video.goto('https://www.youtube.com/watch?v=fixture-one');
     await video.bringToFront();
     await command({command:'desktop', context:{app:'chrome.exe',title:'Video fixture - Google Chrome'}});
     result = await until(value=>value.rows.some(row=>row.domain==='youtube.com' && row.classification==='unclassified'));
+    result = await until(value=>value.rows.at(-1)?.title==='Video fixture', 'tab title updates after navigation');
+    preview = await sync();
+    assert.equal(preview.state.tab_context.title, 'Video fixture');
     const firstKey = result.records.find(record=>record.domain==='youtube.com').page_key;
     await video.goto('https://www.youtube.com/watch?v=fixture-two');
     result = await until(value=>value.records.some(record=>record.domain==='youtube.com' && record.page_key!==firstKey));
@@ -151,6 +160,7 @@ async function main() {
     await popup.waitForFunction(()=>document.querySelector('#timer-primary').textContent==='Start' && !document.querySelector('#timer-primary').disabled);
     await popup.locator('#timer-primary').click();
     result = await until(value=>value.timer_status==='running' && value.recent[0]?.status==='running', 'start next block from extension');
+    assert.equal(result.status.timer.name, 'real-browser-test', 'session name remains stable across remote finish/start');
     await popup.waitForFunction(()=>document.querySelector('#timer-state').textContent==='RUNNING' && document.querySelector('#timer-primary').textContent==='Pause' && !document.querySelector('#timer-primary').disabled);
     await popup.setViewportSize({width:400,height:900});
     await popup.locator('main').screenshot({path:'docs/assets/browser-extension.png'});

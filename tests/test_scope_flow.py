@@ -15,6 +15,7 @@ def test_start_cancel_skip_and_resume_do_not_duplicate_session(tmp_path, monkeyp
     monkeypatch.setenv("BREADCRUMBS_HOME", str(tmp_path))
     async def exercise():
         app = BreadcrumbsApp()
+        app.settings.browser_bridge_port = 0
         async with app.run_test(size=(110, 40)) as pilot:
             await pilot.click("#start")
             await pilot.pause()
@@ -31,7 +32,7 @@ def test_start_cancel_skip_and_resume_do_not_duplicate_session(tmp_path, monkeyp
             assert app.timer.status is TimerStatus.RUNNING
             sid = app.active_session_id
             assert app._tracking_settings.activity_source == "off"
-            assert app._bridge is None
+            assert app._bridge is not None and not app._bridge.state.status()["active"]
             app.action_toggle()
             assert app.timer.status is TimerStatus.PAUSED
             app.action_toggle()

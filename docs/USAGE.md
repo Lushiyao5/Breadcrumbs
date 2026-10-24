@@ -17,7 +17,10 @@ Press `Escape` to return to timer controls.
 
 Keep the generated session name or edit the **Session name** field before
 starting. Names use letters, numbers, and hyphens; spaces become hyphens.
-Each recorded block needs a unique name.
+Session names are unique. Work blocks and breaks keep the same session name,
+including after reopening the app. Press `Ctrl+N` to explicitly start a new
+session, or edit the name before the next block. Each block retains its own
+timer, reflection, and recovery checkpoint.
 
 Choose Focus, Short, Long, or a custom duration, then press `Space`. New focus
 and custom blocks ask you to choose a scope, reuse the previous scope, or
@@ -113,6 +116,7 @@ bundled locally; see [reading sources](READING.md).
 | `M` / `N` | Pet / spawn a companion |
 | `Q` | Save the active block and quit |
 | `?` | Replay the feature tour while ready or paused |
+| `Ctrl+N` | Explicitly start a new session |
 
 While editing, ordinary letter keys type text. Use `Escape` to return to timer
 shortcuts. The bottom bar follows the current context.

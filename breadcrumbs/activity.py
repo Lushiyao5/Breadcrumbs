@@ -38,7 +38,8 @@ def is_browser(app: str) -> bool:
 def activity_label(value: str) -> str:
     """Readable UI names; durable observation codes stay compatible with exports."""
     return {"planned": "In scope", "unclassified": "Deviation", "supporting": "Supporting",
-            "away": "Away", "unknown": "Unknown", "excluded": "Excluded"}.get(value, value)
+            "away": "Away", "unknown": "Unknown", "excluded": "Excluded",
+            "break": "Break", "block": "Work block"}.get(value, value)
 
 
 @dataclass(frozen=True)
@@ -92,6 +93,14 @@ def window_title_keys(title: str) -> tuple[str, ...]:
     for suffix in suffixes:
         if title.endswith(suffix):
             variants.add(title[:-len(suffix)].strip())
+    # Browser chrome uses different dash glyphs and may append a profile name.
+    # Strip only a known browser suffix; arbitrary title fragments are not matches.
+    browser_suffix = re.search(
+        r"\s+[-—–|]\s+(?:google chrome|chromium|brave|microsoft edge|mozilla firefox|vivaldi|opera)"
+        r"(?:\s+[-—–|]\s+[^\r\n]{1,100})?$", title,
+    )
+    if browser_suffix:
+        variants.add(title[:browser_suffix.start()].strip())
     return tuple(hashlib.sha256(value.encode()).hexdigest() for value in variants if value)
 
 
@@ -273,10 +282,15 @@ class IntegratedSource:
                     )
         if native.status == "active" and is_browser(native.app):
             narrowed = bool(self.settings.activity_pages or self.settings.activity_domains)
+            if state is None or not state.browser_records():
+                problem = "No recent browser reports · open the extension and check pairing/sharing"
+            elif not any(record["focused"] for record in state.browser_records()):
+                problem = "No focused web tab reported · check extension sharing and page permissions"
+            else:
+                problem = "Browser window/tab match is ambiguous · check the active browser profile"
             return Context(native.app, "", identity=native.identity, source=native.source,
                            status="unknown" if narrowed else "active",
-                           notice="Tab not verified · connect/reload browser extension" if narrowed else
-                                  "Browser tab not paired or ambiguous", precision="window")
+                           notice=problem, precision="window")
         return native
 
 

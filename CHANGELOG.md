@@ -1,5 +1,44 @@
 # Changelog
 
+## 0.4.1 — Keep the session, follow the trail · 2026-10-25
+
+### Fixed
+
+- Branches opens at the latest activity and keeps following new visits and
+  duration updates without rebuilding the list. Inspecting an older visit
+  preserves selection; End or Latest returns to the newest activity.
+- A session keeps its name across work blocks, breaks, and app restarts.
+  Ctrl+N or an explicitly edited name starts a different session. Block
+  checkpoints, reflections, and elapsed times remain separate.
+- The timer bridge starts for untracked running blocks too, so the paired
+  extension can detect/control the current block without enabling capture.
+  Port conflicts retry after another app instance closes.
+- Browser title matching handles alternate dash glyphs and browser/profile
+  suffixes, while ambiguous profiles still remain unverified.
+
+### Added
+
+- Click/Enter opens a full, scrollable activity detail screen with logo,
+  timestamps, title/domain, capture precision, and annotation keys at all sizes.
+- Short/long breaks appear in the session's branch timeline as timer spans.
+  Paused/offline gaps are excluded; app/browser capture stays off during breaks.
+- Explicit terminal-title program hints and bundled logos for Claude Code,
+  Codex, Python, Node.js, Git, and Neovim. Hints affect presentation only;
+  process-verified agent attribution and scope classification stay separate.
+- The extension shows its actual last reported tab/domain. Disabled title
+  sharing immediately redacts its preview; stopped, stale, private/internal,
+  or unfocused context clears the preview. Awake heartbeats run every two seconds.
+- Clearer browser verification notices, contributor guidance, updated project
+  positioning, and practical launch-channel suggestions in `docs/SHARING.md`.
+
+### Data and updating
+
+- Existing blocks/history are retained. New blocks store a persistent session
+  root and export its readable session name. Older unrelated blocks are not
+  retroactively joined into a guessed session.
+- Reload the unpacked extension after updating so Chrome/Edge loads v0.4.1.
+  Re-pair if its saved address/token no longer matches Config → Browser connection.
+
 ## 0.4.0 — Breadcrumbs · 2026-10-25
 
 ### Renamed

@@ -102,12 +102,27 @@ precision. A marks in scope, S supporting, V deviation (U also works). These ann
 remain separate from the source observation. Away, excluded, and unknown
 observations retain their labels.
 
+The view follows the latest activity until you select an older visit. Press
+End or **Latest** to resume following. Click or Enter opens a full detail view
+with the logo, timestamps, title/domain, source precision, and annotation keys;
+this also works when the compact sidebar is hidden on a small terminal.
+
+Work blocks and short/long breaks belong to the same named session. Break
+running spans appear in its timeline without collecting app/browser metadata.
+Pause and closed-app gaps are excluded from break duration. Start a different
+session explicitly with Ctrl+N or by editing the name before the next block.
+
+Explicit foreground terminal titles can supply program/logo hints for Codex,
+Claude Code, Python, Node.js, Git, and Neovim. A title hint changes presentation
+only: it does not change recorded app identity, scope classification, or agent
+verification. With title storage off, these hints are unavailable.
+
 The bar above the persistent command keys shows the latest sampled context.
 Capture runs only during running focus/custom blocks. Pause, breaks, decision
 dialogs, and exit stop it. Late results from earlier spans are discarded.
 Sampling estimates transition times; it does not record every click.
 
-Browser updates are event-driven, with a ten-second heartbeat while awake and
+Browser updates are event-driven, with a two-second heartbeat while awake and
 a thirty-second alarm fallback. MV3 worker suspension can delay reports. Records
 expire after 45 seconds rather than remaining live indefinitely.
 

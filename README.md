@@ -2,13 +2,10 @@
 
 **Start with an intention. Leave yourself a trail back.**
 
-A terminal focus companion for developers. Plan a block, work through a
-checklist, and see where your attention went. Review the result when you're
-done. Sessions, intentions, reflections, and activity stay in a local SQLite
-database.
-
-Breadcrumbs was previously called **Tlock**. This release brings the timer,
-focus branches, and browser controls together under one name.
+A terminal-first productivity timer that keeps your goals in view and helps
+you understand where you trail off. Built for developers, and anyone who wants
+a simple timer, a clear plan, and a way back when attention wanders. Sessions,
+intentions, reflections, and optional activity stay in a local SQLite database.
 
 [Install](#install) · [First-run tour](#learn-the-app-step-by-step) · [User guide](docs/USAGE.md) ·
 [Browser extension](docs/BROWSER_EXTENSION.md) ·
@@ -20,13 +17,19 @@ focus branches, and browser controls together under one name.
 
 ## Why build this?
 
-An hour of development rarely happens in one window. You move between an
-editor, a terminal, documentation, and a coding agent. Sometimes a detour
-helps; sometimes you lose the thread.
+We have plenty of productivity tools trying to solve a simple problem. Too
+often, the answer is another subscription, an AI agent you did not need, or an
+extensive system that leaves you more confused than when you started.
 
-Breadcrumbs keeps the plan and the resulting trail together. It isn't trying
-to decide whether every visit was productive. It gives you something concrete
-to review: what you meant to do, where you went, and what you actually finished.
+Sometimes you just want a timer, goals you can keep in view, and a little
+understanding of where your attention trails off. Developers move between
+editors, terminals, documentation, and coding agents; anyone working through a
+task can lose the thread in the same way.
+
+Breadcrumbs solves that small problem: write down what you intend to do, start
+a block, and see the trail you leave behind. Useful detours can be marked as
+Supporting. At the end, record what you finished and pick up where you left
+off. No subscription or AI service is required.
 
 ## What can I use it for?
 
@@ -162,6 +165,10 @@ breadcrumbs update
 
 Session names must be unique and use letters, numbers, or hyphens; spaces are
 converted to hyphens. `--session NAME` is another spelling of `--resume NAME`.
+The session name stays the same across Focus/custom blocks and breaks, including
+after reopening the app. Press `Ctrl+N` to explicitly start a new session, or
+edit the name before starting the next block. Blocks keep separate durations,
+reflections, and recovery checkpoints inside that session.
 
 ## Choose what counts as in scope
 
@@ -236,6 +243,22 @@ The block selector lets you inspect previous trails. Visit details show the
 capture source and precision; explanations use the scope saved for that visit's
 running span. Unknown, Away, and Excluded observations keep their labels.
 
+The timeline follows the newest visit while you are at the end. Select an
+older visit to inspect it without being pulled back by live updates; press
+**End** or **Latest** to return. Breaks appear in the same session timeline
+without collecting app or browser activity.
+
+Click a visit or press **Enter** for a full, scrollable activity detail screen,
+including on small terminals. It shows the logo, title/domain, timestamps,
+duration, capture precision, and annotations.
+
+![Expanded activity details after selecting a visit](docs/assets/activity-details.png)
+
+Terminal titles that explicitly identify Codex, Claude Code, Python, Node.js,
+Git, or Neovim can show the corresponding logo as a **title hint**. These are
+display hints, separate from process-verified agent markers; they do not change
+scope classification. Disable stored titles to disable title-based hints.
+
 ## Reflect, review, and export
 
 After a work block, write what you actually accomplished. Add a focus rating
@@ -290,6 +313,7 @@ are labeled as excerpts. See [reading sources](docs/READING.md).
 | `F` / `R` | Finish/end choices / reset |
 | `H` / `C` | History / Config |
 | `?` | Replay the feature tour while ready or paused |
+| `Ctrl+N` | Explicitly start a new session |
 | `M` / `N` | Pet / change the optional companion |
 | `Q` | Save and quit |
 
@@ -310,17 +334,6 @@ The extension sends domains and hashed URL identities, never raw URL paths or
 queries. Plaintext titles are optional. Unverified browser window titles are
 discarded. Hashes identify pages; they are not a guarantee of anonymity.
 
-## Upgrading from Tlock
-
-Close the old app, then run the installer above. Existing `tlock` commands
-forward to Breadcrumbs; use `breadcrumbs` for new commands and scripts.
-Existing sessions and recovery names remain valid.
-
-The browser extension folder changed with the package rename. Remove the old
-unpacked extension, run `breadcrumbs browser path`, load that folder, and pair
-it from **Config → Browser connection**. Later updates to that folder normally
-need only the extension's Reload button.
-
 ## Roadmap
 
 Breadcrumbs is the first tool in a planned suite of small terminal productivity
@@ -329,6 +342,19 @@ data, and make it easier to return to the work.
 
 Next directions: weekly review, editor/project context, better terminal-pane
 integration, and broader desktop support.
+
+## Contributors welcome
+
+Help us make everyday work easier. New features, useful integrations, simpler
+workflows, bug fixes, documentation, accessibility improvements, and ideas from
+your own routine are welcome. You do not need a big proposal to contribute.
+
+Open an issue with the problem you want to solve, or send a focused pull request.
+Good places to start: editor/terminal integrations, clearer activity context,
+better keyboard access, desktop support, and review/export workflows. Keep the
+simple timer useful on its own and make integrations optional.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and checks.
 
 ## Development
 

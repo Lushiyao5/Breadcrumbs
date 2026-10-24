@@ -18,7 +18,8 @@ TOUR_STEPS = (
      "Ctrl+B adds a task. Enter continues a checklist. F2 checks or unchecks the current task. "
      "Escape returns to timer shortcuts. Drafts save automatically, even before you start.\n\n"
      "Keep the generated session name or type a unique name before starting. Unchecked tasks "
-     "and notes carry forward; completed tasks stay in that block's history."),
+     "and notes carry forward; completed tasks stay in that block's history. The session name "
+     "continues across blocks and breaks. Ctrl+N explicitly starts a new session."),
     ("Pick a rhythm", "Press 1 for Focus, 2 for a short break, or 3 for a long break. "
      "Enter custom minutes and choose Set timer for a standalone block.\n\n"
      "P offers 25/5, 50/10, and 60/10 rhythms. C configures durations and full Focus blocks "
@@ -58,7 +59,9 @@ TOUR_STEPS = (
      "Unknown means verification was unavailable. Away and Excluded stay separate.\n\n"
      "Select a visit: A marks In scope, S marks Supporting, V marks Deviation. Unknown, away, "
      "and excluded observations keep their labels. Return to matching context to rejoin "
-     "the main lane. Use the block selector to review older trails."),
+     "the main lane. Breaks appear in the same session timeline without capture. Click a visit "
+     "or press Enter for expanded details, even on small terminals. End / Latest returns to "
+     "the newest activity. The selector reviews older sessions."),
     ("Pause, leave, and recover", "Space pauses without ending the block. Q saves and quits. "
      "Reopen Breadcrumbs to choose a saved block; recovery opens paused.\n\n"
      "From a shell: breadcrumbs sessions lists saves; breadcrumbs --resume NAME resumes one; "

@@ -9,7 +9,7 @@ The following SVGs come from [Simple Icons](https://github.com/simple-icons/simp
 under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/):
 
 - youtube.svg, spotify.svg, googlechrome.svg, firefoxbrowser.svg, openai.svg,
-  github.svg: Simple Icons 13.0.0, tag object
+  github.svg, python.svg, nodedotjs.svg, git.svg, neovim.svg: Simple Icons 13.0.0, tag object
   `4c7196e9953515478cde45dfd47a842bfcd85bb5`.
 - claude.svg: Simple Icons commit
   `30053a0f492fd192740ad001031b3091be060986`.

@@ -43,6 +43,26 @@ def test_terminal_names_are_not_guessed_from_window_titles():
     assert not terminal.is_terminal("Code.exe")
 
 
+@pytest.mark.parametrize(("title", "hint"), [
+    ("Codex", "codex"), ("Codex — my-project", "codex"),
+    ("✳ Claude Code - Working", "claude_code"), ("Python 3.14", "python"),
+    ("Node.js | server", "nodejs"), ("Git: review", "git"), ("nvim - test.py", "neovim"),
+    ("Building a Codex integration", None), ("codex tutorial", None),
+    ("notcodex", None), ("", None),
+])
+def test_terminal_title_hints_are_explicit_and_never_agent_verification(title, hint):
+    from breadcrumbs.activity import Context, classify
+    from breadcrumbs.brands import activity_brand
+    assert terminal.terminal_hint("WindowsTerminal.exe", title) == hint
+    assert terminal.terminal_hint("chrome.exe", title) is None
+    row = dict(app="WindowsTerminal.exe", title=title, domain="")
+    if hint:
+        assert activity_brand(row).key == hint
+    context = Context("WindowsTerminal.exe", title=title)
+    assert not context.agent_id
+    assert classify(context, ["code"], [], agents=[{"id": "verified-agent"}]) == "unclassified"
+
+
 def test_agent_discovery_filters_owned_console_processes_and_launcher_duplicates(monkeypatch):
     rows = [
         dict(pid=11, parent=1, name="node.exe", argv=["node", r"C:\node_modules\@openai\codex\bin\codex.js"], birth="win:11", owned=True, console=True),

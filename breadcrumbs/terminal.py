@@ -34,6 +34,25 @@ def is_terminal(app: str) -> bool:
     return name in _TERMINALS
 
 
+def terminal_hint(app: str, title: str) -> str | None:
+    """Display-only hint from an explicit foreground terminal title.
+
+    This never supplies agent_id or changes scope classification. A process
+    running elsewhere and prose mentioning a tool are not foreground evidence.
+    """
+    if not is_terminal(app) or not title:
+        return None
+    title = re.sub(r"\[breadcrumbs:[a-f0-9]{24}\]", "", title).strip()
+    title = title.lstrip("✳✻✽✶✢⠂⠐●○ ")
+    patterns = (("claude_code", r"claude(?:[ -]code)?"), ("codex", r"codex"),
+                ("neovim", r"(?:neovim|nvim)"), ("python", r"python(?:3(?:\.\d+)?)?"),
+                ("nodejs", r"node(?:\.js)?"), ("git", r"git"))
+    for key, pattern in patterns:
+        if re.match(r"^(?:" + pattern + r")(?:$|\s*[:|—–-]\s*|\s+v?\d)", title, re.IGNORECASE):
+            return key
+    return None
+
+
 def _proc_stat(value: str) -> tuple[str, int, int, str]:
     """Parse after the final ')' because Linux comm can itself contain ')'."""
     close = value.rfind(")")

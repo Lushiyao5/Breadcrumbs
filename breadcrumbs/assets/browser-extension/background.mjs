@@ -27,6 +27,8 @@ export class BrowserBridge {
     this.eventTimer = null;
     this.interval = null;
     this.started = false;
+    this.tabContext = null;
+    this.tabContextAt = null;
     this.identities = this.ensureIdentities();
   }
 
@@ -176,7 +178,7 @@ export class BrowserBridge {
       await this.api.alarms.create(HEARTBEAT_ALARM, {periodInMinutes: 0.5});
       if (this.started && !this.interval) {
         // This timer is best effort; MV3 may suspend it.
-        this.interval = setInterval(() => void this.sync(), 10000);
+        this.interval = setInterval(() => void this.sync(), 2000);
       }
     } else {
       await this.api.alarms.clear(HEARTBEAT_ALARM);
@@ -200,7 +202,16 @@ export class BrowserBridge {
     this.browserState = state;
   }
 
+  acceptTabContext(payload, generation, sequence) {
+    if (generation !== this.generation || sequence < this.settledBrowserSequence) return;
+    this.tabContext = payload.focused && payload.domain ? {
+      domain: payload.domain, title: payload.title || "", title_shared: this.serverStatus?.include_titles === true
+    } : null;
+    this.tabContextAt = performance.now();
+  }
+
   async reportUnfocused() {
+    this.tabContext = null;
     const generation = this.generation;
     const sequence = ++this.browserSequence;
     const sentAt = Date.now() / 1000;
@@ -321,6 +332,7 @@ export class BrowserBridge {
       }
       await this.request(config, "/v1/browser", payload);
       if (generation !== this.generation) return;
+      this.acceptTabContext(payload, generation, browserSequence);
       this.settleBrowser(generation, browserSequence, "connected");
     } catch {
       if (generation === this.generation) {
@@ -342,7 +354,12 @@ export class BrowserBridge {
       inventory_requested: Boolean(config && config.enabled && this.serverStatus && this.serverStatus.inventory_requested),
       last_contact: this.lastContact,
       timer: config ? normalizeTimer(this.serverStatus && this.serverStatus.timer) : null,
-      timer_stale: Boolean(config && this.timerStale())
+      timer_stale: Boolean(config && this.timerStale()),
+      tab_context: config?.enabled && this.serverStatus?.active && !this.timerStale() && !this.forceUnfocused &&
+        this.browserState !== "unavailable" && this.tabContextAt !== null &&
+        performance.now() - this.tabContextAt <= 15000 && this.tabContext ? {...this.tabContext,
+          title: this.serverStatus.include_titles === true ? this.tabContext.title : "",
+          title_shared: this.serverStatus.include_titles === true} : null
     };
   }
 
@@ -364,6 +381,7 @@ export class BrowserBridge {
 
   async setEnabled(enabled) {
     const generation = ++this.generation;
+    this.tabContext = null;
     const config = await this.config();
     if (!config) throw new Error("Pair this browser with Breadcrumbs first.");
     if (generation !== this.generation) return;
@@ -390,6 +408,7 @@ export class BrowserBridge {
     await this.api.storage.local.remove(["endpoint", "token", "enabled"]);
     await this.scheduleAlarm(false);
     this.serverStatus = null;
+    this.tabContext = null;
     this.connectionState = "not_paired";
     this.browserState = "idle";
     this.lastContact = null;

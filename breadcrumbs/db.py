@@ -66,6 +66,10 @@ class Database:
             self.connection.execute(
                 "ALTER TABLE sessions ADD COLUMN completion_reason TEXT NOT NULL DEFAULT 'timer'"
             )
+        if "session_root" not in columns:
+            self.connection.execute("ALTER TABLE sessions ADD COLUMN session_root INTEGER REFERENCES sessions(id)")
+        self.connection.execute("UPDATE sessions SET session_root = id WHERE session_root IS NULL")
+        self.connection.execute("CREATE INDEX IF NOT EXISTS idx_sessions_root ON sessions(session_root)")
         self.connection.execute(
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_sessions_name ON sessions(name)"
         )
@@ -118,8 +122,15 @@ class Database:
         )
         self.connection.commit()
 
-    def begin_session(self, timer_kind: str, planned_seconds: int, goal: str, name: str | None = None) -> int:
-        name = normalize_name(name) if name else self.new_session_name()
+    def begin_session(self, timer_kind: str, planned_seconds: int, goal: str, name: str | None = None,
+                      session_root: int | None = None) -> int:
+        if session_root is not None:
+            root = self.connection.execute("SELECT id FROM sessions WHERE id = ? AND session_root = id", (session_root,)).fetchone()
+            if root is None:
+                raise ValueError("Unknown session")
+            name = self.new_session_name()  # Internal block recovery identity; session name stays on the root.
+        else:
+            name = normalize_name(name) if name else self.new_session_name()
         cursor = self.connection.execute(
             """INSERT INTO sessions
                (timer_kind, planned_seconds, goal, started_at, name, status)
@@ -130,8 +141,35 @@ class Database:
             "INSERT INTO checkpoints VALUES (?, ?, 'running', ?)",
             (cursor.lastrowid, planned_seconds, utc_now()),
         )
+        self.connection.execute("UPDATE sessions SET session_root = ? WHERE id = ?",
+                                (session_root or cursor.lastrowid, cursor.lastrowid))
         self.connection.commit()
         return int(cursor.lastrowid)
+
+    def session_identity(self, block_id: int) -> tuple[int, str]:
+        row = self.connection.execute(
+            "SELECT root.id, root.name FROM sessions block JOIN sessions root ON root.id = block.session_root WHERE block.id = ?",
+            (block_id,),
+        ).fetchone()
+        if row is None:
+            raise ValueError("Unknown session")
+        return row[0], row[1] or f"block-{row[0]}"
+
+    def remember_session(self, root_id: int | None) -> None:
+        self.connection.execute(
+            "INSERT INTO drafts VALUES ('current-session', ?) ON CONFLICT(name) DO UPDATE SET content = excluded.content",
+            (str(root_id) if root_id is not None else "",),
+        )
+        self.connection.commit()
+
+    def current_session(self) -> tuple[int, str] | None:
+        row = self.connection.execute("SELECT content FROM drafts WHERE name = 'current-session'").fetchone()
+        if row and row[0].isdigit():
+            try:
+                return self.session_identity(int(row[0]))
+            except ValueError:
+                pass
+        return None
 
     def new_session_name(self) -> str:
         while True:
@@ -271,6 +309,26 @@ class Database:
         ).fetchall()
         return [dict(row) for row in reversed(rows)]
 
+    def session_trail(self, block_id: int) -> list[dict]:
+        root, _name = self.session_identity(block_id)
+        rows = [dict(row) for row in self.connection.execute(
+            """SELECT activity_intervals.* FROM activity_intervals JOIN sessions
+               ON sessions.id = activity_intervals.session_id WHERE sessions.session_root = ?""", (root,)
+        )]
+        for span in self.connection.execute(
+            """SELECT session_spans.*, sessions.timer_kind FROM session_spans JOIN sessions
+               ON sessions.id = session_spans.session_id WHERE sessions.session_root = ?
+               AND (sessions.timer_kind IN ('short_break', 'long_break') OR NOT EXISTS
+                   (SELECT 1 FROM activity_intervals WHERE span_id = session_spans.id))""", (root,)
+        ):
+            is_break = span["timer_kind"] in ("short_break", "long_break")
+            rows.append(dict(id=f"block:{span['id']}", session_id=span["session_id"], span_id=span["id"],
+                started_at=span["started_at"], ended_at=span["ended_at"] if span["ended_at"] is not None else span["last_seen"],
+                app=span["timer_kind"].replace("_", " ").title(), title="Activity capture is off during breaks" if is_break else "No activity captured in this running span",
+                domain="", source="timer", precision="block", classification="break" if is_break else "block", annotation="",
+                page_key="", agent_id=""))
+        return sorted(rows, key=lambda row: (row["started_at"], row["span_id"], str(row["id"])))
+
     def annotate_activity(self, interval_id: int, annotation: str) -> None:
         if annotation not in ("planned", "supporting", "unclassified"):
             raise ValueError("Unknown branch label")
@@ -291,10 +349,14 @@ class Database:
                  WHERE s.status = 'running'"""
         parameters = ()
         if name is not None:
-            sql += " AND s.name = ?"
-            parameters = (name,)
+            sql += " AND (s.name = ? OR s.session_root IN (SELECT id FROM sessions WHERE name = ?))"
+            parameters = (name, name)
         sql += " ORDER BY c.saved_at DESC, s.id DESC"
-        return [dict(row) for row in self.connection.execute(sql, parameters)]
+        rows = [dict(row) for row in self.connection.execute(sql, parameters)]
+        for row in rows:
+            row["block_name"] = row["name"]
+            row["name"] = self.session_identity(row["id"])[1]
+        return rows
 
     def load_draft(self) -> str:
         row = self.connection.execute(
@@ -353,7 +415,16 @@ class Database:
         rows = self.connection.execute(
             "SELECT * FROM sessions ORDER BY id DESC LIMIT ?", (limit,)
         ).fetchall()
-        return [dict(row) for row in rows]
+        result = [dict(row) for row in rows]
+        for row in result:
+            row["session_name"] = self.session_identity(row["id"])[1]
+        return result
+
+    def named_sessions(self, limit: int = 100) -> list[dict]:
+        return [dict(row) for row in self.connection.execute(
+            """SELECT root.* FROM sessions root JOIN sessions block ON block.session_root = root.id
+               GROUP BY root.id ORDER BY MAX(block.id) DESC LIMIT ?""", (limit,)
+        )]
 
     def stats(self) -> dict[str, int]:
         row = self.connection.execute(
@@ -384,6 +455,8 @@ class Database:
             sql += " LIMIT ?"
             params = (limit,)
         rows = [dict(row) for row in self.connection.execute(sql, params).fetchall()]
+        for row in rows:
+            row["session_name"] = self.session_identity(row["id"])[1]
         if include_activity:
             for row in rows:
                 row["activity_schema_version"] = 1

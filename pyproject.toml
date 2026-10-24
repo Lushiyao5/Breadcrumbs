@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "breadcrumbs"
-version = "0.4.0"
-description = "A terminal focus companion: plan your work, follow your attention, and keep a local trail."
+version = "0.4.1"
+description = "A terminal-first productivity timer that keeps your goals in view and helps you understand where you trail off."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"

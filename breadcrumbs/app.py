@@ -18,7 +18,7 @@ from .config import Settings
 from .activity import Context, activity_label, classify, create_source, suggested_apps, UnavailableSource
 from .branches import BranchesScreen, ScopeScreen, StartSessionScreen, PairBrowserScreen
 from .bridge import BridgeServer
-from .brands import brand_for, render_logo
+from .brands import activity_brand, brand_for, render_logo
 from .db import Database
 from .mascot import PixelMascot
 from .screens import HistoryScreen, PresetScreen, RecoveryScreen, ReflectionScreen, SessionDecisionScreen, SettingsScreen
@@ -129,6 +129,7 @@ class BreadcrumbsApp(App[None]):
         ("3", "long_break", "Long break"),
         ("q", "quit", "Quit"),
         ("question_mark", "tour", "Feature tour"),
+        ("ctrl+n", "new_session", "New session"),
     ]
 
     def __init__(self, resume_name: str | None = None, session_name: str | None = None,
@@ -142,6 +143,10 @@ class BreadcrumbsApp(App[None]):
         self.completed_focuses = self.database.stats()["completed_focuses"]
         self.pomodoro_done = self.database.pomodoro_progress()
         self.session_name = session_name or self.database.new_session_name()
+        self._session_root = None
+        remembered = self.database.current_session() if session_name is None and resume_name is None else None
+        if remembered:
+            self._session_root, self.session_name = remembered
         self._start_new_requested = session_name is not None
         self.resume_name = resume_name
         self.resume_hint: str | None = None
@@ -164,6 +169,7 @@ class BreadcrumbsApp(App[None]):
         self._start_flow_open = False
         self._bridge = None
         self._bridge_failed = False
+        self._bridge_retry_after = 0.0
         self._agent_markers = None
         self._show_onboarding = show_onboarding
 
@@ -200,7 +206,7 @@ class BreadcrumbsApp(App[None]):
         with Vertical(id="footer"):
             yield Static("", id="active-context", markup=False)
             yield CommandBar(
-                "SPACE start/pause · B branches · E intentions · H history · C config · ? tour · Q quit"
+                "SPACE start/pause · B branches · E intentions · H history · C config · CTRL+N new session · ? tour · Q quit"
             )
 
     def on_mount(self) -> None:
@@ -263,6 +269,12 @@ class BreadcrumbsApp(App[None]):
 
     def _recover(self, name: str | None) -> None:
         if name is None:
+            # Recovery's "Start new" / Escape is an explicit new-session choice.
+            if self._session_root is not None:
+                self._session_root = None
+                self.database.remember_session(None)
+                self.session_name = self.database.new_session_name()
+                self._home_query("#session-name", Input).value = self.session_name
             return
         rows = self.database.recoverable(name)
         if not rows:
@@ -283,7 +295,8 @@ class BreadcrumbsApp(App[None]):
         self.timer.remaining_seconds = row["remaining_seconds"]
         self.timer.status = TimerStatus.PAUSED
         self.active_session_id = row["id"]
-        self.session_name = row["name"]
+        self._session_root, self.session_name = self.database.session_identity(row["id"])
+        self.database.remember_session(self._session_root)
         self._goal_text = row["goal"]
         self._home_query("#session-name", Input).value = self.session_name
         self._home_query("#goal-input", GoalEditor).load_text(row["goal"] or GoalEditor.DEFAULT_TEXT)
@@ -331,21 +344,25 @@ class BreadcrumbsApp(App[None]):
                     pages=settings.activity_pages, agents=settings.activity_agents)
 
     def _ensure_bridge(self):
-        if self._bridge is None and not self._bridge_failed:
+        if self._bridge is None and time.monotonic() >= self._bridge_retry_after:
             try:
                 self._bridge = BridgeServer(self.settings.browser_bridge_port).start()
+                self._bridge_failed = False
                 from .terminal import AgentMarkers
                 self._agent_markers = AgentMarkers(self._bridge)
             except (OSError, ValueError):
+                first_failure = not self._bridge_failed
                 self._bridge_failed = True
-                self.notify("Browser bridge unavailable (port in use?). App capture still works.", severity="warning")
+                self._bridge_retry_after = time.monotonic() + 5
+                if first_failure:
+                    self.notify("Browser connection unavailable. Close other Breadcrumbs instances using this port; connection will retry.", severity="warning")
         return self._bridge
 
     def _publish_bridge(self):
         settings = self._tracking_settings
         active = self._capture_wanted() and settings.activity_source == "integrated"
         inventory = any(isinstance(screen, (ScopeScreen,)) for screen in self.screen_stack)
-        if active:
+        if active or self.active_session_id is not None:
             self._ensure_bridge()
         if self._bridge:
             self._bridge.state.publish(active, settings.activity_titles, inventory)
@@ -461,9 +478,12 @@ class BreadcrumbsApp(App[None]):
             text.append("Waiting for active context · B branches", style="dim")
         else:
             context = self._current_context
-            brand = brand_for(context.app, context.domain)
+            brand = activity_brand(dict(app=context.app, title=context.title, domain=context.domain))
             text.append_text(render_logo(brand, compact=True))
             text.append(" " + (brand.label if brand.key != "generic" else context.app), style=brand.color)
+            from .terminal import terminal_hint
+            if terminal_hint(context.app, context.title):
+                text.append(" (title hint)", style="dim")
             if context.domain or context.title:
                 text.append(" · " + (context.title or context.domain))
             label = self._classify(context)
@@ -491,14 +511,21 @@ class BreadcrumbsApp(App[None]):
 
     def _configure(self, kind: TimerKind, seconds: int | None = None) -> None:
         self.timer.configure(seconds or self._duration_for(kind), kind)
-        typed_name = self._home_query("#session-name", Input).value.strip()
-        if typed_name and not self.database.name_exists(typed_name):
-            self.session_name = typed_name
-        elif self.database.name_exists(self.session_name):
-            self.session_name = self.database.new_session_name()
-        self._home_query("#session-name", Input).value = self.session_name
         self._reading_due = 0.0
         self._refresh_view()
+
+    def action_new_session(self):
+        def start_new():
+            self._session_root = None
+            self.database.remember_session(None)
+            self.session_name = self.database.new_session_name()
+            self._home_query("#session-name", Input).value = self.session_name
+            self._configure(TimerKind.FOCUS)
+            self.notify("New session. Give it a name or keep this one.")
+        if self.active_session_id is not None:
+            self._request_change(start_new, "start a new session")
+        else:
+            start_new()
 
     def action_focus(self) -> None:
         self._select(TimerKind.FOCUS)
@@ -540,10 +567,13 @@ class BreadcrumbsApp(App[None]):
                 self._goal_text = goal
                 try:
                     raw_name = self._home_query("#session-name", Input).value.strip()
-                    self.session_name = normalize_name(raw_name) if raw_name else self.database.new_session_name()
+                    chosen = normalize_name(raw_name) if raw_name else self.session_name
+                    root = self._session_root if chosen == self.session_name else None
                     self.active_session_id = self.database.begin_session(
-                        self.timer.kind.value, self.timer.duration_seconds, goal, self.session_name
+                        self.timer.kind.value, self.timer.duration_seconds, goal, chosen, session_root=root
                     )
+                    self._session_root, self.session_name = self.database.session_identity(self.active_session_id)
+                    self.database.remember_session(self._session_root)
                     self._home_query("#session-name", Input).value = self.session_name
                 except ValueError as exc:
                     self.notify(str(exc), severity="error")
@@ -655,7 +685,7 @@ class BreadcrumbsApp(App[None]):
     def action_branches(self) -> None:
         if isinstance(self.screen, BranchesScreen):
             return
-        session_id = self.active_session_id if self.timer.kind in (TimerKind.FOCUS, TimerKind.CUSTOM) else None
+        session_id = self.active_session_id or self._session_root
         self.push_screen(self._themed(BranchesScreen(self.database, session_id)))
 
     def action_scope(self, starting=False) -> None:

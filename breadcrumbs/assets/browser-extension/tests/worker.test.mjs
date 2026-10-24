@@ -9,6 +9,41 @@ if (!globalThis.crypto) globalThis.crypto = webcrypto;
 const TOKEN = "test-local-token-123456789";
 const ENDPOINT = "http://127.0.0.1:43127";
 
+test("reported tab preview follows navigation and immediately honors title consent", async () => {
+  const tabs = [tab()];
+  const f = fixture({status: {active: true, include_titles: true}, tabs});
+  await f.bridge.sync();
+  assert.equal((await f.bridge.state()).tab_context.title, "A helpful tutorial");
+  tabs[0] = tab({title: "Python docs", url: "https://docs.python.org/3/"});
+  await f.bridge.sync();
+  let context = (await f.bridge.state()).tab_context;
+  assert.equal(context.title, "Python docs");
+  assert.equal(context.domain, "docs.python.org");
+  f.remoteStatus.include_titles = false;
+  await f.bridge.refreshStatus();
+  context = (await f.bridge.state()).tab_context;
+  assert.equal(context.title, "");
+  assert.equal(context.title_shared, false);
+  await f.bridge.setEnabled(false);
+  assert.equal((await f.bridge.state()).tab_context, null);
+});
+
+test("private/internal tabs and stale status never leave a previous tab preview", async () => {
+  const tabs = [tab()];
+  const f = fixture({status: {active: true, include_titles: true}, tabs});
+  await f.bridge.sync();
+  tabs[0] = tab({incognito: true});
+  await f.bridge.sync();
+  assert.equal((await f.bridge.state()).tab_context, null);
+  tabs[0] = tab({url: "chrome://settings"});
+  await f.bridge.sync();
+  assert.equal((await f.bridge.state()).tab_context, null);
+  tabs[0] = tab();
+  await f.bridge.sync();
+  f.bridge.lastStatusAt = performance.now() - 16000;
+  assert.equal((await f.bridge.state()).tab_context, null);
+});
+
 test("native worker fetch retains its required global receiver", async () => {
   const original = globalThis.fetch;
   globalThis.fetch = async function () {

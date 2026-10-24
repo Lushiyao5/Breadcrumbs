@@ -13,7 +13,7 @@ from textual.widgets import Button, Input, Label, OptionList, Select, SelectionL
 from textual.widgets.option_list import Option
 
 from .activity import activity_label, app_key, clean, domain_name
-from .brands import brand_for, render_logo
+from .brands import activity_brand, brand_for, render_logo
 from .config import Settings
 from .widgets import CommandBar
 
@@ -40,9 +40,16 @@ def trail_prompts(rows: list[dict]) -> list[Text]:
     on_branch = False
     for row in rows:
         label = row.get("annotation") or row["classification"]
+        if label in ("break", "block"):
+            text = Text("○   ", style="#78b8ff" if label == "break" else "#78869f")
+            text.append(datetime.fromtimestamp(row["started_at"]).strftime("%H:%M:%S") + "  ", style="dim")
+            text.append(row["app"] + f"  {duration(row['ended_at'] - row['started_at'])}  [{activity_label(label)}]")
+            prompts.append(text)
+            on_branch = False
+            continue
         branch = label != "planned"
         color = {"planned": "#70e1c1", "supporting": "#78b8ff", "unclassified": "#ffd166"}.get(label, "#78869f")
-        brand = brand_for(row["app"], row["domain"])
+        brand = activity_brand(row)
         text = Text()
         if branch and not on_branch:
             text.append("│╲\n", style=color)
@@ -53,6 +60,9 @@ def trail_prompts(rows: list[dict]) -> list[Text]:
         text.append(f"{timestamp}  ", style="dim")
         name = brand.label if brand.key != "generic" else clean(row["app"])
         text.append(name, style=brand.color)
+        from .terminal import terminal_hint
+        if terminal_hint(row["app"], row["title"]):
+            text.append(" (title hint)", style="dim")
         detail = row["domain"] or row["title"]
         if detail:
             text.append(" · " + clean(detail, 65), style=brand.color)
@@ -286,11 +296,92 @@ class ScopeScreen(ModalScreen[Settings | None]):
             self.refresh_pages()
 
 
+def visit_details(database, row):
+    from .terminal import terminal_hint
+    from .brands import activity_brand
+    brand = activity_brand(row)
+    label = row.get("annotation") or row["classification"]
+    start = datetime.fromtimestamp(row["started_at"]).strftime("%Y-%m-%d %H:%M:%S")
+    end = datetime.fromtimestamp(row["ended_at"]).strftime("%H:%M:%S")
+    text = f"{brand.label}\n{row['domain']}\n{row['title']}\n\n"
+    text += f"{activity_label(label)} · {duration(row['ended_at'] - row['started_at'])}\n{start} → {end}\n"
+    text += f"{row['source']} · {row['precision']}\n\n"
+    hint = terminal_hint(row["app"], row["title"])
+    if hint:
+        text += f"Terminal host: {row['app']}\nProgram hint: {brand.label} (window title; not process verified)\n\n"
+    elif row["precision"] == "terminal-marker":
+        text += "Agent verified by live process and foreground terminal marker.\n\n"
+    scope = database.span_scope(row["span_id"])
+    if row["precision"] == "window":
+        from .activity import is_browser
+        from .terminal import is_terminal
+        if is_browser(row["app"]) and (scope.get("pages") or scope.get("domains")):
+            text += "Only the browser window was captured. Its selected page could not be verified.\n\n"
+        elif is_terminal(row["app"]) and scope.get("agents"):
+            text += "Only the terminal host was captured. The selected agent was not verified.\n\n"
+    if label in ("break", "block"):
+        text += "Timer span · no app/browser capture during breaks.\n\n" if label == "break" else "Timer span · no activity observations recorded.\n\n"
+    else:
+        text += "A in scope\nS supporting detour\nV deviation\n\n"
+    return brand, text + brand.mark_name
+
+
+class ActivityDetailScreen(ModalScreen[None]):
+    BINDINGS = [("escape", "close", "Back"), ("a", "label('planned')", "In scope"),
+                ("s", "label('supporting')", "Supporting"), ("v", "label('unclassified')", "Deviation")]
+    CSS = """
+    ActivityDetailScreen { align: center middle; background: #090b12e8; }
+    #visit-card { width: 90%; max-width: 86; height: 90%; padding: 1 2;
+        background: #151927; border: round #70e1c1; }
+    #visit-scroll { height: 1fr; }
+    #visit-logo { height: 8; margin-bottom: 1; }
+    #visit-info { height: auto; }
+    #visit-close { width: 100%; margin-top: 1; }
+    """
+
+    def __init__(self, database, row):
+        super().__init__()
+        self.database, self.row = database, dict(row)
+
+    def compose(self):
+        with Vertical(id="visit-card"):
+            yield Static("Activity details", classes="modal-title")
+            with VerticalScroll(id="visit-scroll"):
+                yield Static("", id="visit-logo")
+                yield Static("", id="visit-info", markup=False)
+            yield Button("Back to branches", id="visit-close")
+        yield CommandBar("A in scope · S supporting · V deviation · scroll details · ESC back")
+
+    def on_mount(self):
+        self._refresh()
+
+    def _refresh(self):
+        brand, text = visit_details(self.database, self.row)
+        self.query_one("#visit-logo", Static).update(render_logo(brand))
+        self.query_one("#visit-info", Static).update(text)
+
+    def action_label(self, label):
+        if self.row["classification"] in ("unknown", "away", "excluded", "break", "block"):
+            self.notify("This observation keeps its recorded label.")
+            return
+        self.database.annotate_activity(self.row["id"], label)
+        self.row["annotation"] = label
+        self._refresh()
+
+    def action_close(self):
+        self.dismiss(None)
+
+    def on_button_pressed(self, event):
+        event.stop()
+        self.action_close()
+
+
 class BranchesScreen(ModalScreen[None]):
     BINDINGS = [
         ("escape", "close", "Close"), ("b", "close", "Close"),
         ("s", "supporting", "Supporting"), ("a", "planned", "In scope"),
         ("v", "deviation", "Deviation"), ("u", "deviation", "Deviation"),
+        ("end", "latest", "Latest activity"),
     ]
     CSS = """
     BranchesScreen { align: center middle; background: #090b12e8; }
@@ -305,7 +396,8 @@ class BranchesScreen(ModalScreen[None]):
     #branch-detail { width: 30; padding: 0 1; overflow-y: auto; border-left: solid #303a55; }
     #branch-logo { height: 8; margin-bottom: 1; }
     #branch-info { height: auto; }
-    #branch-actions { height: 3; grid-size: 2; grid-gutter: 1; margin-top: 1; }
+    #branch-actions { height: 3; grid-size: 3; grid-gutter: 1; margin-top: 1; }
+    #branch-actions Button { min-width: 8; }
     BranchesScreen.narrow #branches-body { layout: vertical; }
     BranchesScreen.narrow #branch-detail { width: 100%; height: 7; layout: horizontal; }
     BranchesScreen.narrow #branch-logo { width: 18; height: 7; }
@@ -316,12 +408,12 @@ class BranchesScreen(ModalScreen[None]):
     def __init__(self, database, session_id: int | None = None):
         super().__init__()
         self.database = database
-        self.session_id = session_id
+        self.session_id = database.session_identity(session_id)[0] if session_id else None
         self._rows = []
         self._signature = None
-        self._session_rows = [r for r in database.recent(100) if r["timer_kind"] in ("focus", "custom")]
-        if session_id and session_id not in {row["id"] for row in self._session_rows}:
-            row = database.connection.execute("SELECT * FROM sessions WHERE id = ?", (session_id,)).fetchone()
+        self._session_rows = database.named_sessions()
+        if self.session_id and self.session_id not in {row["id"] for row in self._session_rows}:
+            row = database.connection.execute("SELECT * FROM sessions WHERE id = ?", (self.session_id,)).fetchone()
             if row is not None:
                 self._session_rows.insert(0, dict(row))
 
@@ -338,9 +430,10 @@ class BranchesScreen(ModalScreen[None]):
                     yield Static("", id="branch-logo")
                     yield Static("Select a visit to inspect its context.", id="branch-info", markup=False)
             with Grid(id="branch-actions"):
+                yield Button("Latest", id="branch-latest")
                 yield Button("Scope / source", id="branch-scope")
                 yield Button("Close", id="branch-close")
-        yield CommandBar("↑↓ visits · A in scope · S supporting · V deviation · ESC close")
+        yield CommandBar("↑↓ visits · ENTER/click details · END latest · A/S/V label · ESC close")
 
     def on_mount(self):
         self.set_class(self.size.width < 100, "narrow")
@@ -348,27 +441,33 @@ class BranchesScreen(ModalScreen[None]):
         selected = self.query_one("#branch-session", Select).value
         self.session_id = int(selected) if selected is not Select.BLANK else None
         self._refresh_trail()
+        self.call_after_refresh(self._refresh_trail)
         self.set_interval(1.0, self._refresh_trail)
         self.query_one("#trail", OptionList).focus()
 
     def on_resize(self):
         self.set_class(self.size.width < 100, "narrow")
         self.set_class(self.size.height < 32, "short")
+        self.call_after_refresh(self._scroll_latest)
 
     def on_select_changed(self, event: Select.Changed):
         if event.select.id == "branch-session":
-            self.session_id = int(event.value) if event.value is not Select.BLANK else None
-            self._signature = None
-            self._refresh_trail()
+            chosen = int(event.value) if event.value is not Select.BLANK else None
+            if chosen != self.session_id:
+                self.session_id = chosen
+                self._signature = None
+                self.query_one("#trail", OptionList).clear_options()
+                self._refresh_trail()
 
     def _refresh_trail(self):
         if not self.is_mounted or not len(self.query("#trail")):
             return
-        self._rows = self.database.activity_for(self.session_id) if self.session_id else []
+        previous_rows = self._rows
+        self._rows = self.database.session_trail(self.session_id) if self.session_id else []
         signature = repr(self._rows)
         self.query_one("#branches-heading", Static).update("Focus branches · recorded context")
         self.query_one("#branches-note", Static).update(
-            scope_summary(self.database.load_scope(self.session_id) if self.session_id else None) + "\n" +
+            scope_summary(self.database.load_scope(self._rows[-1]["session_id"] if self._rows else self.session_id) if self.session_id else None) + "\n" +
             ("In scope = main lane · Deviation = outside scope · Unknown = context not verified."
              if self._rows else "No visits recorded yet. Choose a scope and run a focus block.")
         )
@@ -376,11 +475,23 @@ class BranchesScreen(ModalScreen[None]):
             options = self.query_one("#trail", OptionList)
             old = options.highlighted
             was_last = old is None or old == options.option_count - 1
-            options.clear_options()
             prompts = trail_prompts(self._rows)
-            options.add_options([Option(prompt, id=str(row["id"])) for row, prompt in zip(self._rows, prompts)])
+            old_ids = [str(row["id"]) for row in previous_rows]
+            ids = [str(row["id"]) for row in self._rows]
+            if options.option_count != len(old_ids) or ids[:len(old_ids)] != old_ids:
+                options.clear_options()
+                options.add_options([Option(prompt, id=str(row["id"])) for row, prompt in zip(self._rows, prompts)])
+            else:
+                old_prompts = trail_prompts(previous_rows)
+                for index, prompt in enumerate(prompts[:len(old_ids)]):
+                    if prompt != old_prompts[index]:
+                        options.replace_option_prompt_at_index(index, prompt)
+                options.add_options([Option(prompt, id=str(row["id"]))
+                    for row, prompt in zip(self._rows[len(old_ids):], prompts[len(old_ids):])])
             if self._rows:
                 options.highlighted = len(self._rows) - 1 if was_last else min(old, len(self._rows) - 1)
+                if was_last:
+                    self.call_after_refresh(self._scroll_latest)
             self._signature = signature
         self._detail()
 
@@ -391,21 +502,26 @@ class BranchesScreen(ModalScreen[None]):
             self.query_one("#branch-info", Static).update("Select a visit to inspect its context.")
             return
         row = self._rows[options.highlighted]
-        brand = brand_for(row["app"], row["domain"])
+        brand, text = visit_details(self.database, row)
         self.query_one("#branch-logo", Static).update(render_logo(brand))
-        label = row.get("annotation") or row["classification"]
-        text = f"{brand.label if brand.key != 'generic' else row['app']}\n{row['domain']}\n{row['title']}\n\n"
-        text += f"{activity_label(label)} · {duration(row['ended_at'] - row['started_at'])}\n{row['source']} · {row['precision']}\n\n"
-        scope = self.database.span_scope(row["span_id"])
-        if row["precision"] == "window":
-            from .activity import is_browser
-            from .terminal import is_terminal
-            if is_browser(row["app"]) and (scope.get("pages") or scope.get("domains")):
-                text += "Only the browser window was captured. Its selected page could not be verified.\n\n"
-            elif is_terminal(row["app"]) and scope.get("agents"):
-                text += "Only the terminal host was captured. The selected agent was not verified.\n\n"
-        text += "A in scope\nS supporting detour\nV deviation\n\n" + brand.mark_name
         self.query_one("#branch-info", Static).update(text)
+
+    def _scroll_latest(self):
+        options = self.query_one("#trail", OptionList)
+        if options.highlighted == options.option_count - 1:
+            options.scroll_end(animate=False)
+
+    def action_latest(self):
+        options = self.query_one("#trail", OptionList)
+        if options.option_count:
+            options.highlighted = options.option_count - 1
+            self.call_after_refresh(self._scroll_latest)
+
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected):
+        event.stop()
+        row = next((row for row in self._rows if str(row["id"]) == event.option.id), None)
+        if row is not None:
+            self.app.push_screen(self.app._themed(ActivityDetailScreen(self.database, row)))
 
     def on_option_list_option_highlighted(self, event: OptionList.OptionHighlighted):
         self._detail()
@@ -415,7 +531,7 @@ class BranchesScreen(ModalScreen[None]):
         if options.highlighted is None or not self._rows:
             return
         row = self._rows[options.highlighted]
-        if row["classification"] in ("away", "unknown", "excluded"):
+        if row["classification"] in ("away", "unknown", "excluded", "break", "block"):
             self.notify("Idle, unknown, and excluded intervals retain their observation labels.")
             return
         self.database.annotate_activity(row["id"], label)
@@ -434,3 +550,5 @@ class BranchesScreen(ModalScreen[None]):
             self.action_close()
         elif event.button.id == "branch-scope":
             self.app.action_scope()
+        elif event.button.id == "branch-latest":
+            self.action_latest()

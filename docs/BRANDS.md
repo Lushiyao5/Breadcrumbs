@@ -19,6 +19,7 @@ The original SVGs and their licenses are bundled in
 | Claude / Claude Code | Simple Icons `claude.svg`, commit `30053a0f492fd192740ad001031b3091be060986` |
 | OpenAI / Codex / ChatGPT | Simple Icons `openai.svg`, version 13.0.0 |
 | GitHub | Simple Icons `github.svg`, version 13.0.0 |
+| Python / Node.js / Git / Neovim | Simple Icons `python.svg` / `nodedotjs.svg` / `git.svg` / `neovim.svg`, version 13.0.0 |
 | Visual Studio Code | Microsoft Codicons `src/icons/vscode.svg`, commit `5a6ad49557af022f97987cb3cfc3412b5d03f554` |
 | Terminal / unknown application | Microsoft Codicons `terminal.svg` / `window.svg`, same commit |
 
@@ -55,6 +56,13 @@ a URL, infer what a user is doing inside a terminal, or classify an activity
 as productive. A title containing "Codex" is not enough to identify the Codex
 process. Claude's desktop and CLI process names may be indistinguishable;
 `claude` uses the broad Claude label, while `claude-code` identifies Claude Code.
+
+The separate `activity_brand(row)` presentation helper can use an explicit
+program name at the start of an already-captured terminal title. It labels this
+as a **title hint**, retains the terminal's recorded app identity, and never
+changes scope classification or supplies a verified agent ID. Supported hints
+include Claude Code, Codex, Python, Node.js, Git, and Neovim. Ordinary prose
+mentioning a tool and browser/editor titles do not trigger terminal hints.
 
 Default rendering is 16 terminal columns by eight rows using upper/lower block
 cells. `render_logo(brand, compact=True)` is a two-column, one-row braille
