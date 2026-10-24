@@ -51,7 +51,7 @@ def test_historical_visit_explanation_uses_its_span_scope(tmp_path, monkeypatch)
             await pilot.press("home", "enter")
             await pilot.pause()
             assert app.screen.query_one("#trail", OptionList).highlighted == 0
-            assert app.screen.has_class("expanded")
+            assert app.screen.query_one("#branch-detail").display
             assert "selected page could not be verified" in str(app.screen.query_one("#branch-info", Static).renderable)
 
     asyncio.run(exercise())

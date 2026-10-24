@@ -59,8 +59,8 @@ TOUR_STEPS = (
      "Unknown means verification was unavailable. Away and Excluded stay separate.\n\n"
      "Select a visit: A marks In scope, S marks Supporting, V marks Deviation. Unknown, away, "
      "and excluded observations keep their labels. Return to matching context to rejoin "
-     "the main lane. Breaks appear in the same session timeline without capture. Click a visit "
-     "or press Enter for sidebar details; Escape collapses it and Ctrl+Enter opens a full view. End / Latest returns to "
+     "the main lane. Breaks appear in the same session timeline without capture. Activity details "
+     "stay in the sidebar and follow your selection; Escape closes branches. End / Latest returns to "
      "the newest activity. The selector reviews older sessions."),
     ("Pause, leave, and recover", "Space pauses without ending the block. Q saves and quits. "
      "Reopen Breadcrumbs to choose a saved block; recovery opens paused.\n\n"

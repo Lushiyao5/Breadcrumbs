@@ -387,7 +387,6 @@ class BranchesScreen(ModalScreen[None]):
         ("s", "supporting", "Supporting"), ("a", "planned", "In scope"),
         ("v", "deviation", "Deviation"), ("u", "deviation", "Deviation"),
         ("end", "latest", "Latest activity"),
-        ("ctrl+enter", "full_detail", "Full activity details"),
     ]
     CSS = """
     BranchesScreen { align: center middle; background: #090b12e8; }
@@ -399,8 +398,7 @@ class BranchesScreen(ModalScreen[None]):
     #branches-body { height: 1fr; }
     #trail { width: 1fr; height: 1fr; border: none; background: #0d111d; }
     #trail > .option-list--option-highlighted { background: #20384a; color: #edf2f7; }
-    #branch-detail { display: none; width: 40; padding: 0 1; overflow-y: auto; border-left: solid #303a55; }
-    BranchesScreen.expanded #branch-detail { display: block; }
+    #branch-detail { width: 40; padding: 0 1; overflow-y: auto; border-left: solid #303a55; }
     #branch-detail-heading { height: auto; color: #70e1c1; margin-bottom: 1; }
     #branch-logo { height: 8; margin-bottom: 1; }
     #branch-info { height: auto; }
@@ -443,7 +441,7 @@ class BranchesScreen(ModalScreen[None]):
                 yield Button("Latest", id="branch-latest")
                 yield Button("Scope / source", id="branch-scope")
                 yield Button("Close", id="branch-close")
-        yield CommandBar("↑↓ visits · ENTER/click sidebar · CTRL+ENTER full · END latest · A/S/V label · ESC back")
+        yield CommandBar("↑↓/click activity · Details follow selection · END latest · A/S/V label · ESC close")
 
     def on_mount(self):
         self.set_class(self.size.width < 100, "narrow")
@@ -539,21 +537,11 @@ class BranchesScreen(ModalScreen[None]):
         event.stop()
         row = next((row for row in self._rows if str(row["id"]) == event.option.id), None)
         if row is not None:
-            self.add_class("expanded")
             self._detail()
             self.call_after_refresh(self._keep_selection_visible)
 
-    def action_full_detail(self):
-        options = self.query_one("#trail", OptionList)
-        if options.highlighted is not None and options.highlighted < len(self._rows):
-            self.app.push_screen(self.app._themed(ActivityDetailScreen(self.database, self._rows[options.highlighted])))
-
     def action_back(self):
-        if self.has_class("expanded"):
-            self.remove_class("expanded")
-            self.query_one("#trail", OptionList).focus()
-        else:
-            self.action_close()
+        self.action_close()
 
     def on_option_list_option_highlighted(self, event: OptionList.OptionHighlighted):
         self._detail()

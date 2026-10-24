@@ -248,9 +248,9 @@ older visit to inspect it without being pulled back by live updates; press
 **End** or **Latest** to return. Breaks appear in the same session timeline
 without collecting app or browser activity.
 
-Click a visit or press **Enter** to expand its scrollable details in a sidebar
-while keeping the branch list visible. `Escape` collapses it; `Ctrl+Enter`
-opens a full detail screen when you want more space. The compact branch card
+Activity details stay in a scrollable sidebar beside the branch list. Click a
+visit or use the arrow keys and the details follow your selection immediately.
+`Escape` closes the branch view. The compact branch card
 shows the logo, title/domain, timestamps, duration, capture precision, and
 annotations, without artwork credits in the activity UI.
 

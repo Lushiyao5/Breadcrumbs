@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.3 — Persistent sidebar and safer Windows updates · 2026-10-25
+
+- Keep activity details visible beside the branch list. Arrow keys or a click
+  immediately update the sidebar. Enter stays inline; Escape closes branches.
+  Remove the Ctrl+Enter activity popup.
+- Wait for running Windows launchers to close before pip changes packages. If
+  they remain open, stop safely with an actionable status and leave the app intact.
+- Back up the importable Breadcrumbs package and its metadata before updating,
+  restoring them if pip fails after uninstalling. Avoid forcibly reinstalling
+  every dependency on an application update.
+- Update the README and real UI captures to match the persistent sidebar.
+- Add regression coverage for a busy launcher and recovery after pip failure.
+
+
 ## 0.4.2 — Current browser build, cleaner branch details · 2026-10-25
 
 - Fix the legacy unpacked-extension path left behind by the runtime rename:
