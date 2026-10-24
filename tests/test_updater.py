@@ -1,7 +1,7 @@
 import io
 import json
 
-from tlock import updater
+from breadcrumbs import updater
 
 
 class FakeResponse(io.BytesIO):
@@ -15,8 +15,8 @@ class FakeResponse(io.BytesIO):
 def test_latest_release_and_version_comparison(monkeypatch) -> None:
     payload = {
         "tag_name": "v0.5.0",
-        "html_url": "https://github.com/SaroashDS/Tlock/releases/tag/v0.5.0",
-        "zipball_url": "https://api.github.com/repos/SaroashDS/Tlock/zipball/v0.5.0",
+        "html_url": "https://github.com/SaroashDS/Breadcrumbs/releases/tag/v0.5.0",
+        "zipball_url": "https://api.github.com/repos/SaroashDS/Breadcrumbs/zipball/v0.5.0",
         "body": "Release notes",
     }
     monkeypatch.setattr(
@@ -34,12 +34,12 @@ def test_latest_release_and_version_comparison(monkeypatch) -> None:
 
 def test_launch_update_uses_detached_helper(tmp_path, monkeypatch) -> None:
     calls = []
-    monkeypatch.setenv("TLOCK_HOME", str(tmp_path))
+    monkeypatch.setenv("BREADCRUMBS_HOME", str(tmp_path))
     monkeypatch.setattr(updater.subprocess, "Popen", lambda command, **kwargs: calls.append(command))
     release = updater.Release("0.5.0", "v0.5.0", "page", "archive", "")
 
     log_path, status_path = updater.launch_update(release)
 
-    assert calls[0][1:4] == ["-m", "tlock.update_helper", "archive"]
+    assert calls[0][1:4] == ["-m", "breadcrumbs.update_helper", "archive"]
     assert log_path.parent == tmp_path
     assert status_path.parent == tmp_path

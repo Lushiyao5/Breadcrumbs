@@ -7,14 +7,14 @@ import time
 import pytest
 from textual.widgets import Select, Static
 
-from tlock.app import TlockApp
-from tlock.config import Settings
-from tlock.db import Database
-from tlock.reading import QUOTES, next_card
-from tlock.screens import RecoveryScreen, SessionDecisionScreen
-from tlock.session_names import generate_name, normalize_name
-from tlock.timer import TimerKind, TimerStatus
-from tlock.widgets import GoalEditor, ReadingCard
+from breadcrumbs.app import BreadcrumbsApp
+from breadcrumbs.config import Settings
+from breadcrumbs.db import Database
+from breadcrumbs.reading import QUOTES, next_card
+from breadcrumbs.screens import RecoveryScreen, SessionDecisionScreen
+from breadcrumbs.session_names import generate_name, normalize_name
+from breadcrumbs.timer import TimerKind, TimerStatus
+from breadcrumbs.widgets import GoalEditor, ReadingCard
 
 
 def test_checkpoint_survives_connection_restart_and_early_finish(tmp_path):
@@ -39,10 +39,10 @@ def test_checkpoint_survives_connection_restart_and_early_finish(tmp_path):
 
 
 def test_checkpoint_survives_abrupt_process_exit(tmp_path, monkeypatch):
-    monkeypatch.setenv("TLOCK_HOME", str(tmp_path))
+    monkeypatch.setenv("BREADCRUMBS_HOME", str(tmp_path))
     subprocess.run(
         [sys.executable, "-c",
-         "import os; from tlock.db import Database; db=Database(); "
+         "import os; from breadcrumbs.db import Database; db=Database(); "
          "sid=db.begin_session('focus', 1500, 'Crash safe', 'steady-willow'); "
          "db.checkpoint(sid, 1234.5, 'running', 'Crash safe'); os._exit(0)"],
         check=True,
@@ -55,15 +55,15 @@ def test_checkpoint_survives_abrupt_process_exit(tmp_path, monkeypatch):
 
 
 def test_expiry_waits_for_settings_and_custom_timer_stays_standalone(tmp_path, monkeypatch):
-    monkeypatch.setenv("TLOCK_HOME", str(tmp_path))
+    monkeypatch.setenv("BREADCRUMBS_HOME", str(tmp_path))
 
     async def exercise():
-        app = TlockApp()
+        app = BreadcrumbsApp()
         app.settings.sound_enabled = False
         app.settings.auto_start_breaks = True
         async with app.run_test(size=(110, 40)) as pilot:
             app._select(TimerKind.CUSTOM, 1)
-            app.action_toggle()
+            app._begin_block()
             app.action_settings()
             await pilot.pause()
             app.screen.query_one("#reading-mode", Select).value = "quotes"
@@ -107,20 +107,20 @@ def test_migration_preserves_legacy_history(tmp_path):
 
 
 def test_quit_and_resume_reuse_the_same_session(tmp_path, monkeypatch):
-    monkeypatch.setenv("TLOCK_HOME", str(tmp_path))
+    monkeypatch.setenv("BREADCRUMBS_HOME", str(tmp_path))
 
     async def exercise():
-        app = TlockApp(session_name="quiet-otter")
+        app = BreadcrumbsApp(session_name="quiet-otter")
         async with app.run_test(size=(110, 40)) as pilot:
             app._home_query("#goal-input", GoalEditor).load_text("- [ ] Recover me")
             await pilot.pause()
-            app.action_toggle()
+            app._begin_block()
             session_id = app.active_session_id
             app.timer.pause()
             app.timer.remaining_seconds = 1312.5
         assert app.resume_hint == "quiet-otter"
 
-        restored = TlockApp(resume_name="quiet-otter")
+        restored = BreadcrumbsApp(resume_name="quiet-otter")
         async with restored.run_test(size=(110, 40)) as pilot:
             await pilot.pause()
             assert restored.timer.status is TimerStatus.PAUSED
@@ -135,13 +135,13 @@ def test_quit_and_resume_reuse_the_same_session(tmp_path, monkeypatch):
 
 
 def test_switch_cancel_finish_and_end_preserve_time(tmp_path, monkeypatch):
-    monkeypatch.setenv("TLOCK_HOME", str(tmp_path))
+    monkeypatch.setenv("BREADCRUMBS_HOME", str(tmp_path))
 
     async def exercise():
-        app = TlockApp(session_name="bright-fern")
+        app = BreadcrumbsApp(session_name="bright-fern")
         app.settings.sound_enabled = False
         async with app.run_test(size=(110, 40)) as pilot:
-            app.action_toggle()
+            app._begin_block()
             first_id = app.active_session_id
             app.action_short_break()
             await pilot.pause()
@@ -168,7 +168,7 @@ def test_switch_cancel_finish_and_end_preserve_time(tmp_path, monkeypatch):
             assert app.settings.focus_minutes == 50
             assert app.timer.duration_seconds == 3000
             assert app.timer.kind is TimerKind.FOCUS
-            app.action_toggle()
+            app._begin_block()
             app.timer.pause()
             app.timer.remaining_seconds = 2900
             app.action_reset()
@@ -185,14 +185,14 @@ def test_switch_cancel_finish_and_end_preserve_time(tmp_path, monkeypatch):
 
 
 def test_new_session_keeps_old_recovery_and_cards_rotate(tmp_path, monkeypatch):
-    monkeypatch.setenv("TLOCK_HOME", str(tmp_path))
+    monkeypatch.setenv("BREADCRUMBS_HOME", str(tmp_path))
     db = Database()
     old = db.begin_session("focus", 1500, "Saved", "merry-cloud")
     db.checkpoint(old, 1200, "running", "Saved")
     db.close()
 
     async def exercise():
-        app = TlockApp()
+        app = BreadcrumbsApp()
         async with app.run_test(size=(80, 24)) as pilot:
             await pilot.pause()
             assert isinstance(app.screen, RecoveryScreen)
@@ -215,7 +215,7 @@ def test_new_session_keeps_old_recovery_and_cards_rotate(tmp_path, monkeypatch):
             app.settings.reading_mode = "off"
             app._refresh_view()
             assert not card.has_class("visible")
-            app.action_toggle()
+            app._begin_block()
             assert app.active_session_id != old
             assert len(app.database.recoverable()) == 2
 
@@ -253,7 +253,7 @@ def test_daily_summary_excludes_breaks_and_old_sessions(tmp_path):
 
 
 def test_resume_cli_alias_and_naming_flags():
-    from tlock.__main__ import build_parser
+    from breadcrumbs.__main__ import build_parser
 
     parser = build_parser()
     assert parser.parse_args(["--resume", "calm-otter"]).resume == "calm-otter"
@@ -266,10 +266,10 @@ def test_resume_cli_alias_and_naming_flags():
 def test_previous_two_column_layout_and_labeled_name_field(tmp_path, monkeypatch):
     from textual.widgets import Input
 
-    monkeypatch.setenv("TLOCK_HOME", str(tmp_path))
+    monkeypatch.setenv("BREADCRUMBS_HOME", str(tmp_path))
 
     async def exercise():
-        app = TlockApp()
+        app = BreadcrumbsApp()
         async with app.run_test(size=(90, 30)) as pilot:
             await pilot.pause()
             assert not app.screen.has_class("compact")

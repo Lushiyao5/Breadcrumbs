@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "tlock"
-version = "0.3.0"
-description = "An 8-bit terminal focus timer with goals, reflections, and local history."
+name = "breadcrumbs"
+version = "0.4.0"
+description = "A terminal focus companion: plan your work, follow your attention, and keep a local trail."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
@@ -22,19 +22,20 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/SaroashDS/Tlock"
-Repository = "https://github.com/SaroashDS/Tlock"
-Issues = "https://github.com/SaroashDS/Tlock/issues"
-Changelog = "https://github.com/SaroashDS/Tlock/releases"
+Homepage = "https://github.com/SaroashDS/Breadcrumbs"
+Repository = "https://github.com/SaroashDS/Breadcrumbs"
+Issues = "https://github.com/SaroashDS/Breadcrumbs/issues"
+Changelog = "https://github.com/SaroashDS/Breadcrumbs/releases"
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 
 [project.scripts]
-tlock = "tlock.__main__:main"
+breadcrumbs = "breadcrumbs.__main__:main"
+tlock = "breadcrumbs.__main__:legacy_main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["tlock"]
+packages = ["breadcrumbs"]

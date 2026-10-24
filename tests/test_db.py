@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from tlock.db import Database
+from breadcrumbs.db import Database
 
 
 def test_session_lifecycle_and_export(tmp_path: Path) -> None:

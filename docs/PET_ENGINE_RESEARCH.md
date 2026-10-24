@@ -1,6 +1,6 @@
 # Terminal pet engine exploration
 
-Tlock currently keeps its sprite and interaction engine native to Textual. This
+Breadcrumbs currently keeps its sprite and interaction engine native to Textual. This
 avoids two terminal renderers competing for keyboard input, mouse tracking, the
 alternate screen, and frame timing.
 
@@ -29,7 +29,7 @@ Strong ideas: half-block Unicode sprites, fixed animation timelines, care-state
 machines, and persistent pet state.
 
 Integration cost: game-specific sprite collections may have unclear or
-third-party intellectual-property constraints. Tlock should use original,
+third-party intellectual-property constraints. Breadcrumbs should use original,
 small, auditable sprites.
 
 ## Experiments worth doing
@@ -39,7 +39,7 @@ small, auditable sprites.
 2. Add small completion particles inside the existing mascot widget.
 3. Add mouse interactions such as feed, play, and pet without introducing a
    second event loop.
-4. Persist happiness and energy locally, but freeze or soften decay while Tlock
+4. Persist happiness and energy locally, but freeze or soften decay while Breadcrumbs
    is closed so the companion never punishes absence.
 5. Define a documented community pet-pack format containing original frames,
    metadata, attribution, and a declared license.

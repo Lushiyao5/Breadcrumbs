@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Breadcrumbs Browser Bridge · Connection</title>
+  <link rel="stylesheet" href="connection.css">
+  <script src="connection.js" type="module"></script>
+</head>
+<body class="options" data-theme="midnight">
+  <main>
+    <p class="eyebrow">BREADCRUMBS / FOCUS</p>
+    <h1>Focus session</h1>
+    <p class="intro">Your timer, with browser context when you want it.</p>
+    <section class="panel" id="session-panel" aria-labelledby="session-heading">
+      <div class="card-heading">
+        <h2 id="session-heading">CURRENT BLOCK</h2>
+        <span id="timer-state" class="badge">OFFLINE</span>
+      </div>
+      <p id="timer-name">Pair with Breadcrumbs to see your session.</p>
+      <output id="timer-clock" aria-label="Time remaining">--:--</output>
+      <p id="timer-kind" class="timer-kind">Focus</p>
+      <div class="timer-actions">
+        <button type="button" id="timer-primary" disabled>Start</button>
+        <button type="button" id="timer-finish" class="quiet" disabled>Finish early</button>
+      </div>
+      <div id="timer-confirmation" class="confirmation" hidden>
+        <p>Finish early and save elapsed time?</p>
+        <p id="timer-confirm-name" class="detail"></p>
+        <div class="timer-actions">
+          <button type="button" id="timer-confirm">Finish and save</button>
+          <button type="button" id="timer-cancel" class="quiet">Keep working</button>
+        </div>
+      </div>
+      <p id="timer-detail" class="detail">The timer runs in Breadcrumbs. These controls act on that same block.</p>
+    </section>
+    <section class="panel" aria-labelledby="sharing-heading">
+    <div class="card-heading"><h2 id="sharing-heading">BROWSER CONTEXT</h2></div>
+    <div id="status" role="status" aria-live="polite">Checking connection…</div>
+    <p id="detail" class="detail"></p>
+    <details id="connection-settings">
+    <summary>Pairing settings</summary>
+    <form id="pair-form">
+      <label for="endpoint">Connection URL</label>
+      <input id="endpoint" type="url" placeholder="http://127.0.0.1:PORT" autocomplete="off" spellcheck="false" required>
+      <label for="token">Pairing token</label>
+      <input id="token" type="password" placeholder="Copy the token shown by Breadcrumbs" autocomplete="off" required>
+      <button type="submit" id="pair">Pair with Breadcrumbs</button>
+    </form>
+    </details>
+    <div class="actions">
+      <button type="button" id="start">Start sharing</button>
+      <button type="button" id="stop">Stop sharing</button>
+      <button type="button" id="disconnect" class="quiet">Disconnect</button>
+    </div>
+    </section>
+    <p id="error" role="alert"></p>
+    <p class="privacy">No page content, cookies, keystrokes, or private tabs. URL paths and queries stay in Chrome. Connection settings stay in this browser profile.</p>
+    <p class="privacy">The timer asks for tab inventory while its scope picker is open. During an opted-in running block, it asks for the focused tab. Titles are shared for the explicit inventory request, or during capture only when Breadcrumbs enables title capture.</p>
+  </main>
+</body>
+</html>

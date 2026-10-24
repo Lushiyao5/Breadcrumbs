@@ -1,4 +1,4 @@
-from tlock.timer import TimerEngine, TimerKind, TimerStatus
+from breadcrumbs.timer import TimerEngine, TimerKind, TimerStatus
 
 
 def test_timer_counts_down_and_finishes() -> None:

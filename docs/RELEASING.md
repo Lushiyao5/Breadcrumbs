@@ -1,6 +1,6 @@
-# Releasing Tlock
+# Releasing Breadcrumbs
 
-Tlock uses two GitHub Actions workflows:
+Breadcrumbs uses two GitHub Actions workflows:
 
 - **CI** runs the test suite and compilation checks on Windows and Ubuntu for
   every push to `main` and every pull request.
@@ -18,14 +18,14 @@ git pull --ff-only
 git status
 ```
 
-Update the version in both `pyproject.toml` and `tlock/__init__.py` (for example,
+Update the version in both `pyproject.toml` and `breadcrumbs/__init__.py` (for example,
 to `0.2.0` for the next release), then run the same checks expected by CI and
 the release workflow:
 
 ```powershell
 python -m pip install -e ".[dev]"
 python -m pytest -q
-python -m compileall -q tlock tests
+python -m compileall -q breadcrumbs tests
 python -m pip install --upgrade build twine
 python -m build
 python -m twine check dist/*
@@ -34,7 +34,7 @@ python -m twine check dist/*
 Commit and push the version change:
 
 ```powershell
-git add pyproject.toml tlock/__init__.py
+git add pyproject.toml breadcrumbs/__init__.py
 git commit -m "release: v0.2.0"
 git push origin main
 ```
@@ -43,13 +43,13 @@ Wait for CI to pass. Then create and push an annotated tag whose value exactly
 matches the package version:
 
 ```powershell
-git tag -a v0.2.0 -m "Tlock v0.2.0"
+git tag -a v0.2.0 -m "Breadcrumbs v0.2.0"
 git push origin v0.2.0
 ```
 
 That tag push starts the Release workflow. Follow it in the repository's
 **Actions** tab. When it finishes, verify the generated release and its wheel
-and source archive under **Releases**. `tlock update --check` discovers the
+and source archive under **Releases**. `breadcrumbs update --check` discovers the
 latest published release.
 
 For the initial `0.1.0` release, use `v0.1.0` in the two tag commands; no

@@ -20,9 +20,9 @@ References:
 The new English cards for 53:39 and the excerpt from 39:53 follow Dr. Mustafa
 Khattab's *The Clear Quran* wording shown on Quran.com. Existing cards use
 short English meanings. Verse references and excerpt boundaries are stored in
-`tlock/verses.py`; the card selector is in `tlock/reading.py`.
+`breadcrumbs/verses.py`; the card selector is in `breadcrumbs/reading.py`.
 
-Quote cards are original Tlock reminders. They are not attributed to historical
+Quote cards are original Breadcrumbs reminders. They are not attributed to historical
 figures or presented as religious text.
 
 Reading is offline. Source links are documentation only; the app does not
