@@ -48,8 +48,10 @@ def test_historical_visit_explanation_uses_its_span_scope(tmp_path, monkeypatch)
             app.database.save_scope(sid, {"apps": ["chrome"]})
             app.action_branches()
             await pilot.pause()
-            app.screen.query_one("#trail", OptionList).highlighted = 0
+            await pilot.press("home", "enter")
             await pilot.pause()
+            assert app.screen.query_one("#trail", OptionList).highlighted == 0
+            assert app.screen.has_class("expanded")
             assert "selected page could not be verified" in str(app.screen.query_one("#branch-info", Static).renderable)
 
     asyncio.run(exercise())
