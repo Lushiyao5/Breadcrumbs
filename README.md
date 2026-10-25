@@ -5,8 +5,8 @@
 <h1 align="center">Breadcrumbs</h1>
 
 <p align="center">
-  <strong>A terminal-first productivity timer that helps you understand where you trail off.</strong><br />
-  Set an intention, stay with your goal, and leave yourself a trail back.
+  <strong>Local-first, no account. A terminal-first productivity timer.</strong><br />
+  Keep your goals in view and understand where your attention trails off.
 </p>
 
 ```sh
