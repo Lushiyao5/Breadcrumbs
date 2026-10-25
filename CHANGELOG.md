@@ -17,8 +17,7 @@
   Explain native capture platform limits before users install.
 - Prepare authenticated PyPI publishing and concrete contributor issues.
   Direct released-wheel installation remains available without Git.
-- Add a music-led launch with prominent branch proof and a comprehensive
-  native-1080p feature guide using real app and extension captures.
+- Add a short README GIF using real intention, timer and branch captures.
 
 
 ## 0.4.3 — Persistent sidebar and safer Windows updates · 2026-10-25

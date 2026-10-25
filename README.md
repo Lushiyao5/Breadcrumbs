@@ -1,12 +1,13 @@
-# Breadcrumbs
+<p align="center">
+  <img src="https://raw.githubusercontent.com/SaroashDS/Breadcrumbs/main/docs/assets/breadcrumbs-mark-transparent.png" width="220" alt="Breadcrumbs bread-and-trail mark" />
+</p>
 
-<img src="https://raw.githubusercontent.com/SaroashDS/Breadcrumbs/main/docs/assets/breadcrumbs-logo.png" width="140" align="right" alt="Breadcrumbs pixel bread-and-trail logo" />
+<h1 align="center">Breadcrumbs</h1>
 
-**A terminal-first timer that helps you understand where you trail off.**
-
-Write an intention, start a focus block, and follow your attention back to the
-work. A simple timer, a clear goal, and an optional trail of apps and browser tabs.
-No subscription or AI service required.
+<p align="center">
+  <strong>A terminal-first productivity timer that helps you understand where you trail off.</strong><br />
+  Set an intention, stay with your goal, and leave yourself a trail back.
+</p>
 
 ```sh
 pipx install https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.5/breadcrumbs-0.4.5-py3-none-any.whl
@@ -16,7 +17,9 @@ Then run `breadcrumbs`. **Python 3.11+** and [pipx](https://pipx.pypa.io/stable/
 This installs the released wheel in an isolated environment; no shell script or Git clone.
 PyPI publication is pending; the command above installs directly from the GitHub release.
 
-![Set an intention, start, switch away, and see the branch trail](https://raw.githubusercontent.com/SaroashDS/Breadcrumbs/main/docs/assets/breadcrumbs-demo.gif)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/SaroashDS/Breadcrumbs/main/docs/assets/breadcrumbs-demo.gif" width="900" alt="Set an intention, start, and see the branch trail" />
+</p>
 
 **Platform support:** timer + paired Chrome/Edge work on Windows, Linux and macOS.
 Native foreground-app capture supports **Windows and Linux/X11 only**.
