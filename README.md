@@ -10,12 +10,12 @@
 </p>
 
 ```sh
-pipx install https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.6/breadcrumbst-0.4.6-py3-none-any.whl
+pipx install breadcrumbst
 ```
 
 Then run `breadcrumbs`. **Python 3.11+** and [pipx](https://pipx.pypa.io/stable/installation/) are required.
-This installs the released wheel in an isolated environment; no shell script or Git clone.
-The wheel installs directly from the GitHub release. [Other install options](docs/INSTALL.md)
+The PyPI package is `breadcrumbst`; the command is `breadcrumbs`.
+No shell script or Git clone. [Other install options](docs/INSTALL.md)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/SaroashDS/Breadcrumbs/main/docs/assets/breadcrumbs-demo.gif" width="900" alt="Set an intention, start, and see the branch trail" />
@@ -80,7 +80,7 @@ context stays Unknown. [Setup and limitations](docs/ACTIVITY.md)
 Prefer a one-off run with [uv](https://docs.astral.sh/uv/getting-started/installation/)?
 
 ```sh
-uvx --from https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.5/breadcrumbs-0.4.5-py3-none-any.whl breadcrumbs
+uvx breadcrumbst
 ```
 
 [All installation options](docs/INSTALL.md) cover pipx, uvx, ordinary virtual

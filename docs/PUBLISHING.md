@@ -7,13 +7,13 @@ despite its public API returning 404. The owner has selected the accepted
 
 ## Current status
 
-GitHub release wheels are published and support pipx/uvx installation now.
+`breadcrumbst` v0.4.6 is published on PyPI. Public-registry pipx and uvx installs
+were verified against that version. The main console command is `breadcrumbs`.
+GitHub release wheels remain available as an alternative.
 The source distribution includes the application, tests and package metadata;
 local video renders, supplied music and authoring caches are excluded.
-PyPI publication is not yet configured: no local PyPI token, `.pypirc`, or
-enabled repository publishing configuration was available during this update.
-The README therefore uses the real released wheel URL rather than claiming a
-bare package-name install already works.
+The `pypi` environment and trusted publisher are configured. Tagged releases
+publish automatically with `PUBLISH_TO_PYPI=true`; no local account token is needed.
 
 ## One-time owner setup
 
