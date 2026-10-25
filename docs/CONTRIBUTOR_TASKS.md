@@ -8,7 +8,9 @@ before taking it so people do not duplicate work.
 | --- | --- | --- |
 | [#5](https://github.com/SaroashDS/Breadcrumbs/issues/5) | CSV session summaries | Good first issue · CLI, CSV quoting, isolated tests |
 | [#6](https://github.com/SaroashDS/Breadcrumbs/issues/6) | Actionable export filesystem errors | Good first issue · small CLI error-handling fix |
-| [#7](https://github.com/SaroashDS/Breadcrumbs/issues/7) | macOS CI timer/wheel smoke check | Good first issue · portable behavior, no native capture claim |
+| [#10](https://github.com/SaroashDS/Breadcrumbs/issues/10) | First-session documentation clarity | Good first issue · focused wording and one copyable example |
+| [#11](https://github.com/SaroashDS/Breadcrumbs/issues/11) | Session-name boundary tests | Good first issue · deterministic validation tests |
+| [#12](https://github.com/SaroashDS/Breadcrumbs/issues/12) | Export and browser help text | Good first issue · descriptions, examples and parser assertions |
 | [#3](https://github.com/SaroashDS/Breadcrumbs/issues/3) | Local weekly review | Help wanted · SQLite aggregation and local-week boundaries |
 | [#8](https://github.com/SaroashDS/Breadcrumbs/issues/8) | Privacy-safe `doctor` command | Help wanted · measured capabilities without tokens or personal context |
 | [#4](https://github.com/SaroashDS/Breadcrumbs/issues/4) | Optional VS Code workspace context | Help wanted · small authenticated protocol proposal |

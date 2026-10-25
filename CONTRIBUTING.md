@@ -5,7 +5,7 @@ documentation, and ideas that make everyday work easier are welcome. Describe
 the problem you are solving in an issue or a focused pull request.
 
 For a concrete starting point, see the [contributor task list](docs/CONTRIBUTOR_TASKS.md):
-CSV export, CLI error handling and macOS timer/wheel CI are scoped good first
+CSV export, CLI error handling, session-name tests, help text and documentation are scoped good first
 issues. Platform capture, workspace context and weekly review have help-wanted
 tickets with acceptance criteria. Comment on a ticket before starting.
 
@@ -22,3 +22,8 @@ Breadcrumbs version (`breadcrumbs --version`), and minimal reproduction steps.
 For browser changes, run the extension tests in [TESTING.md](docs/TESTING.md).
 Keep the timer usable without integrations. Label inferred context honestly,
 retain pause/privacy gates, and include a regression test for a behavior fix.
+
+Use the PR template to describe validation and the provenance/license of copied
+code or assets, including generated contributions. Maintainers follow the
+[PR review procedure](docs/PR_REVIEW.md); workflow approval and merging require
+separate review. Never include credentials or personal session data.
