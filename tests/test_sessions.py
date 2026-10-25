@@ -236,6 +236,58 @@ def test_session_names_and_reading_compatibility():
     assert next_card("quotes", index)[0] != index
 
 
+@pytest.mark.parametrize(
+    ("input_name", "expected"),
+    [
+        ("a", "a"),
+        ("9", "9"),
+        ("a" * 60, "a" * 60),
+        ("a" + "-" * 58 + "z", "a" + "-" * 58 + "z"),
+        ("My Work", "my-work"),
+        ("deep_focus", "deep-focus"),
+        ("multiple   spaces", "multiple-spaces"),
+        ("multiple___underscores", "multiple-underscores"),
+        ("mixed _ separators", "mixed-separators"),
+        ("  padded  ", "padded"),
+        ("UPPERCASE", "uppercase"),
+    ],
+)
+def test_normalize_name_valid_boundaries_and_normalization(input_name: str, expected: str):
+    assert normalize_name(input_name) == expected
+
+
+@pytest.mark.parametrize(
+    "invalid_name",
+    [
+        "",
+        "   ",
+        "\t\n",
+        "a" * 61,
+        "-leading-hyphen",
+        "trailing-hyphen-",
+        "-both-ends-",
+        "-",
+        "---",
+        "_leading_underscore",
+        "trailing_underscore_",
+        "../bad",
+        "session.name",
+        "bad@symbol",
+        "has!mark",
+        "slash/path",
+        "hash#tag",
+    ],
+)
+def test_normalize_name_invalid_boundaries_raise_actionable_error(invalid_name: str):
+    with pytest.raises(
+        ValueError,
+        match="Use 1–60 letters, numbers, or hyphens; start and end with a letter or number.",
+    ) as exc_info:
+        normalize_name(invalid_name)
+    assert str(exc_info.value) == "Use 1–60 letters, numbers, or hyphens; start and end with a letter or number."
+
+
+
 def test_daily_summary_excludes_breaks_and_old_sessions(tmp_path):
     db = Database(tmp_path / "history.db")
     focus = db.begin_session("focus", 1500, "")
