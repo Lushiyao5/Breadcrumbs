@@ -1,373 +1,141 @@
 # Breadcrumbs
 
-**Start with an intention. Leave yourself a trail back.**
+<img src="https://raw.githubusercontent.com/SaroashDS/Breadcrumbs/main/docs/assets/breadcrumbs-logo.png" width="140" align="right" alt="Breadcrumbs pixel bread-and-trail logo" />
 
-A terminal-first productivity timer that keeps your goals in view and helps
-you understand where you trail off. Built for developers, and anyone who wants
-a simple timer, a clear plan, and a way back when attention wanders. Sessions,
-intentions, reflections, and optional activity stay in a local SQLite database.
+**A terminal-first timer that helps you understand where you trail off.**
 
-[Install](#install) · [First-run tour](#learn-the-app-step-by-step) · [User guide](docs/USAGE.md) ·
-[Browser extension](docs/BROWSER_EXTENSION.md) ·
-[Changelog](CHANGELOG.md) · [Roadmap](#roadmap)
+Write an intention, start a focus block, and follow your attention back to the
+work. A simple timer, a clear goal, and an optional trail of apps and browser tabs.
+No subscription or AI service required.
 
-![Breadcrumbs with intentions and a small live branch trail](docs/assets/breadcrumbs-focus.png)
+```sh
+pipx install https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.4/breadcrumbs-0.4.4-py3-none-any.whl
+```
 
-*Actual interface with isolated documentation fixtures.*
+Then run `breadcrumbs`. **Python 3.11+** and [pipx](https://pipx.pypa.io/stable/installation/) are required.
+This installs the released wheel in an isolated environment; no shell script or Git clone.
+PyPI publication is pending; the command above installs directly from the GitHub release.
+
+![Set an intention, start, switch away, and see the branch trail](https://raw.githubusercontent.com/SaroashDS/Breadcrumbs/main/docs/assets/breadcrumbs-demo.gif)
+
+**Platform support:** timer + paired Chrome/Edge work on Windows, Linux and macOS.
+Native foreground-app capture supports **Windows and Linux/X11 only**.
+macOS and Wayland native capture are not implemented. [Details](docs/ACTIVITY.md)
+
+[Installation options](docs/INSTALL.md) · [First session](docs/ONBOARDING.md) ·
+[Full guide + keys](docs/USAGE.md) · [Browser extension](docs/BROWSER_EXTENSION.md) ·
+[Latest release](https://github.com/SaroashDS/Breadcrumbs/releases/latest)
+
+## Try one block
+
+1. Press `E` and write one small intention. `Ctrl+B` adds a task; `F2` checks it off.
+2. Press `Escape`, choose a duration, then `Space` to start.
+3. Choose your working scope, reuse it, or continue without tracking.
+4. Switch between your work and other apps. Press `B` to inspect the trail.
+5. Finish the block, save a reflection, and review it with `H`.
+
+The feature tour opens on first launch. Replay it with `?` while ready or paused.
+It never enables capture or starts the timer. [Hands-on onboarding](docs/ONBOARDING.md)
+
+## What it does
+
+| Need | Breadcrumbs feature |
+| --- | --- |
+| Keep the next step in view | Intentions and a persistent Markdown checklist |
+| Work to your own rhythm | Focus/short/long presets, custom timers, pause and resume |
+| Understand a detour | App/browser scope, Git-style branches, useful-detour annotations |
+| Inspect what happened | Activity details stay beside the trail and follow selection |
+| Stop and return later | Named sessions, checkpoints and paused recovery |
+| Learn from a block | Reflections, optional focus rating, history and JSON export |
+| Stay in the browser | Optional extension countdown, Start/Pause/Resume and confirmed Finish |
+
+Sessions keep their name across work blocks, breaks and restarts. `Ctrl+N`
+explicitly starts a new session. Breaks appear in the same trail without capture.
+`End` or **Latest** follows the newest activity; selecting an older visit preserves it.
+
+**In scope** matches your choices. **Supporting** marks a useful detour.
+**Deviation** is outside scope and can still be useful work. **Unknown** means
+the context was not verified. `A`, `S`, and `V` annotate a selected visit.
+
+Optional preferences include three themes, sound previews, a companion and
+reading cards. They stay out of the core timer workflow. [Every setting](docs/USAGE.md#settings)
+
+## Browser and terminal context
+
+Open **Config (`C`) → Browser connection** for the extension folder and local
+pairing token. Load the unpacked extension in Chrome/Edge, pair, then select
+apps, domains or exact pages in scope. Page matching includes query parameters.
+Sharing tab context and controlling the timer are separate controls.
+
+Selected Claude Code/Codex CLI activity uses a verified foreground terminal
+marker. A running background process alone does not count as focus. Pinned
+titles, multiplexers and editor panes may prevent verification; unsupported
+context stays Unknown. [Setup and limitations](docs/ACTIVITY.md)
+
+## Install, update and recover
+
+Prefer a one-off run with [uv](https://docs.astral.sh/uv/getting-started/installation/)?
+
+```sh
+uvx --from https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.4/breadcrumbs-0.4.4-py3-none-any.whl breadcrumbs
+```
+
+[All installation options](docs/INSTALL.md) cover pipx, uvx, ordinary virtual
+environments, the optional Windows installer and source development.
+Use the latest released wheel URL when updating a wheel-based installation.
+
+```sh
+breadcrumbs sessions
+breadcrumbs --resume my-session
+breadcrumbs export --output sessions.json
+breadcrumbs export --activity --output activity.json
+```
+
+Recovery opens paused. Time while the app was closed is excluded. `Q` saves and
+quits; `F` offers Keep working, Finish early or End session.
+[Full keyboard reference](docs/USAGE.md#keyboard-reference)
 
 ## Why build this?
 
-We have plenty of productivity tools trying to solve a simple problem. Too
-often, the answer is another subscription, an AI agent you did not need, or an
-extensive system that leaves you more confused than when you started.
+Too many productivity tools turn a simple need into another subscription, an
+unnecessary AI agent, or a system that takes more work to manage than it saves.
 
-Sometimes you just want a timer, goals you can keep in view, and a little
-understanding of where your attention trails off. Developers move between
-editors, terminals, documentation, and coding agents; anyone working through a
-task can lose the thread in the same way.
+Sometimes you just want a timer, goals you can keep in view, and an understanding
+of where your attention trails off. Breadcrumbs is for developers moving between
+editors, terminals and documentation, and anyone who wants a simpler way to work.
 
-Breadcrumbs solves that small problem: write down what you intend to do, start
-a block, and see the trail you leave behind. Useful detours can be marked as
-Supporting. At the end, record what you finished and pick up where you left
-off. No subscription or AI service is required.
-
-## What can I use it for?
-
-| I want to… | Use this | Start here |
-| --- | --- | --- |
-| Work on one small thing | Focus timer, intentions, and a checklist | `E`, then `Escape`, then `Space` |
-| Use a different work/break rhythm | Presets or custom minutes | `P` or **Set timer** |
-| Remember what I was doing | Named checkpoints and recovery | `Q` saves; reopen to recover |
-| See where my attention went | Optional scope and focus branches | Choose scope at Start; `B` reviews visits |
-| Keep documentation in scope | Exact browser pages or domain rules | Pair the extension, then select scope |
-| Recognize active CLI agent work | Verified Claude Code/Codex terminal markers | Open the agent, then choose it in scope |
-| Control a block from the browser | Extension countdown and timer buttons | Open the paired extension popup |
-| Review a useful detour | Supporting annotations | Select a visit in `B`, then `S` |
-| Record what I finished | Reflection, optional rating, history | Finish a block; review with `H` |
-| Keep a copy of my records | JSON export, with activity only on request | `breadcrumbs export --output sessions.json` |
-| Adjust the look and feel | Themes, sound previews, companion, reading cards | `C` opens Config |
-
-You can use the timer and checklist without tracking anything. Browser pairing,
-activity capture, the companion, and reading cards are independently configurable.
-
-## Install
-
-Requires **Python 3.11+**. On Windows, run once in PowerShell:
-
-```powershell
-irm https://raw.githubusercontent.com/SaroashDS/Breadcrumbs/main/bootstrap.ps1 | iex
-```
-
-Then type:
-
-```powershell
-breadcrumbs
-```
-
-The installer creates a private runtime in `%LOCALAPPDATA%\Breadcrumbs`.
-To install from a checkout:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
-```
-
-On Linux or macOS:
-
-```bash
-git clone https://github.com/SaroashDS/Breadcrumbs.git
-cd Breadcrumbs
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install .
-breadcrumbs
-```
-
-The timer works on all three platforms. Native app capture supports Windows
-and Linux/X11. macOS and Wayland native foreground capture are not implemented.
-See [tracking support and limits](docs/ACTIVITY.md).
-
-## Your first block
-
-1. Press `E` to write intentions. `Ctrl+B` adds a task; `F2` checks it off.
-2. Keep the generated name or enter your own. Choose a duration and press Space.
-3. Select a focus scope, reuse your previous scope, or continue without tracking.
-4. Work. The small trail shows context changes; `B` opens the detailed trail.
-5. Finish the block and record what you accomplished.
-
-For a quick try, enter **2** in custom minutes, choose **Set timer**, and write
-one task such as “Read the failing test.” Choose **Continue without tracking**
-on your first run if you just want to learn the timer. You can add scope later.
-
-`C` opens Config, `H` opens history, and the bottom command bar stays visible.
-Changing an active timer asks whether to keep working, finish early, or end it.
-
-Only a full Focus countdown advances long-break progress. Custom timers and
-early finishes still contribute to work totals. Completing a full long break
-starts a fresh round.
-
-## Learn the app step by step
-
-The first launch of v0.4.0 opens a **12-page feature tour**. It also introduces
-the new features to existing users who have not seen the tour. Use **Next**,
-**Back**, or the left/right arrows. Text scrolls on smaller terminals.
-**Skip** or `Escape` closes it; your choice is remembered.
-
-Press **`?` from the ready or paused timer** to replay it. Saved-session recovery
-comes first, and a running timer asks you to pause before opening the tour.
-Reading the tour never starts a timer or enables capture.
-
-![First-launch feature tour](docs/assets/onboarding.png)
-
-*Actual first-launch screen, captured with an isolated temporary profile.*
-
-Follow the [hands-on onboarding guide](docs/ONBOARDING.md) to try every feature
-with small exercises. Suggested order:
-
-1. Write a task and complete an untracked block.
-2. Try pause, recovery, early finish, reflections, and history.
-3. Choose app scope and inspect your trail.
-4. Pair the browser, select a page, and try remote controls.
-5. Add agent scope, personalize the app, and export your records.
-
-## Timers, intentions, and recovery
-
-**Choose a rhythm.** `1`, `2`, and `3` select Focus, Short break, and Long break.
-`P` offers 25/5, 50/10, and 60/10 presets. Enter custom minutes and choose
-**Set timer** for a standalone countdown. In `C`, set durations, the number
-of full Focus blocks before a long break, and optional automatic starts.
-With automatic starts off, the next timer waits for `Space`.
-
-**Keep a checklist.** `E` focuses the multiline editor. `Ctrl+B` adds a task,
-`Enter` continues it, and `F2` ticks or unticks the current task. Drafts save
-before the timer starts. Unchecked tasks and notes carry to the next block;
-completed tasks remain in the original block's history. Press `Escape` to
-return to timer shortcuts so letter keys stop typing into the editor.
-
-**Leave safely.** `Space` pauses; `Q` saves and quits. On reopening, choose a
-saved block or start a new one. Recovery opens paused with its scope retained.
-Time while the app is closed stays outside the block. Checkpoints are saved
-about every second, so an abrupt shutdown can lose roughly the last second.
-
-**Change your mind.** `F`, Reset, and changes to an active timer offer
-**Keep working**, **Finish early**, or **End session**. Finish early records
-elapsed work as completed and offers a reflection; End session retains
-partial work without marking the block completed.
-
-```powershell
-breadcrumbs --name build-session-recovery
-breadcrumbs sessions
-breadcrumbs --resume calm-otter-a3f2
-breadcrumbs export --output sessions.json
-breadcrumbs export --activity --output activity.json
-breadcrumbs update --check
-breadcrumbs update
-```
-
-Session names must be unique and use letters, numbers, or hyphens; spaces are
-converted to hyphens. `--session NAME` is another spelling of `--resume NAME`.
-The session name stays the same across Focus/custom blocks and breaks, including
-after reopening the app. Press `Ctrl+N` to explicitly start a new session, or
-edit the name before starting the next block. Blocks keep separate durations,
-reflections, and recovery checkpoints inside that session.
-
-## Choose what counts as in scope
-
-On Start, choose **Choose scope and start**, **Use previous scope**, or
-**Continue without tracking**. Cancel leaves the new block unstarted.
-
-| Scope target | Example | What matches |
-| --- | --- | --- |
-| App | Your editor | Foreground activity in that app |
-| Domain | `docs.python.org` | That domain and its subdomains |
-| Exact browser page | A selected documentation tab | The same URL identity, including query parameters |
-| Terminal agent | A detected Codex CLI process | Verified process plus its active terminal marker |
-
-Use `Space` to select targets in the picker and `Ctrl+S` to save. You can add
-app names manually. Plaintext window/tab titles can be switched off. During a
-block, **B → Scope / source** edits the scope; past running spans retain the
-scope they used. Turning capture off keeps the timer available.
-
-To try it, select your editor, start, switch to another app, and return.
-The trail should show a departure and a return. Page and agent verification
-need their respective integrations; missing evidence is shown as Unknown.
-
-## Browser connection
-
-Open **Config (C) → Browser connection**. The setup screen shows the bundled
-extension folder, loopback address, and pairing token.
-
-Load the folder as an unpacked extension in Chrome or Edge and pair it once.
-No ActivityWatch service or account is required. The extension talks directly
-to Breadcrumbs on this computer.
-
-**Timer controls** and **browser sharing** are separate. Stopping sharing stops
-tab reports; pausing the timer stops the block. Finish early requires
-confirmation and saves elapsed work before opening the reflection in the TUI.
-
-The extension picks up a session that was already started in the terminal.
-Opening or reopening the popup reads timer status independently of tab capture.
-
-[Extension setup and controls](docs/BROWSER_EXTENSION.md)
-
-**A first browser exercise:** open a documentation page, pair the extension,
-then select that page in scope. Switch to a different URL and return. The
-same page rejoins scope, while a different query remains a different page.
-Try Pause and Resume in the popup. Try Finish, cancel it once, then confirm
-when you are ready to record the result in the terminal.
-
-## Read the trail
-
-![Recorded branch trail with a supporting detour and return](docs/assets/focus-branches.png)
-
-*Documentation fixtures; the app displays recorded activity only.*
-
-- **In scope:** matches your selected apps, URLs, domains, or verified agent.
-- **Deviation:** outside the selected scope. It does not automatically mean
-  wasted time; mark a useful detour Supporting.
-- **Unknown:** the context could not be verified. A browser window title alone
-  cannot establish whether an exact URL is in scope.
-- **Away / Excluded:** idle or excluded context, kept separate from scope judgments.
-
-Returning to a matching context joins the main lane. Use `A` for In scope,
-`S` for Supporting, and `V` for Deviation.
-
-Exact URL rules include query parameters. Similar titles don't make different
-URLs equivalent. Selecting a browser app does not bypass page/domain rules.
-
-Terminal agent selection verifies the process and a temporary marker in its
-foreground terminal title. A running background agent alone is not evidence
-of focus. Pinned tab titles, multiplexers, and unsupported terminal hosts can
-prevent verification; the UI reports Unknown instead of guessing.
-
-The block selector lets you inspect previous trails. Visit details show the
-capture source and precision; explanations use the scope saved for that visit's
-running span. Unknown, Away, and Excluded observations keep their labels.
-
-The timeline follows the newest visit while you are at the end. Select an
-older visit to inspect it without being pulled back by live updates; press
-**End** or **Latest** to return. Breaks appear in the same session timeline
-without collecting app or browser activity.
-
-Activity details stay in a scrollable sidebar beside the branch list. Click a
-visit or use the arrow keys and the details follow your selection immediately.
-`Escape` closes the branch view. The compact branch card
-shows the logo, title/domain, timestamps, duration, capture precision, and
-annotations, without artwork credits in the activity UI.
-
-![Activity details open beside the branch list](docs/assets/activity-details.png)
-
-Terminal titles that explicitly identify Codex, Claude Code, Python, Node.js,
-Git, or Neovim can show the corresponding logo as a **title hint**. These are
-display hints, separate from process-verified agent markers; they do not change
-scope classification. Disable stored titles to disable title-based hints.
-
-## Reflect, review, and export
-
-After a work block, write what you actually accomplished. Add a focus rating
-from 1–5 if useful. `Ctrl+S` saves the reflection; `Escape` skips it. `H` shows
-session intentions, reflections, elapsed time, and completion status.
-
-The header shows today's work minutes and completed work blocks using your
-computer's local date. Breaks are excluded. The long-break counter is separate:
-it advances only after full Focus countdowns.
-
-```powershell
-# Session history, intentions, reflections, ratings, and timestamps
-breadcrumbs export --output sessions.json
-
-# Add observed activity, annotations, scope, and running spans
-breadcrumbs export --activity --output activity.json
-
-# Limit the export to the newest 20 sessions
-breadcrumbs export --limit 20 --output recent.json
-```
-
-## Make it your own
-
-Open **Config (`C`)**. Use `Ctrl+S` to save, or `Escape` to discard changes.
-
-| Setting | What you can do |
-| --- | --- |
-| Visual theme | Choose Midnight Arcade, Game Boy, or Sunset Drive; the browser popup follows it |
-| Completion melody | Enable/disable sounds and select Arcade, Victory, or Gentle |
-| Sound preview | Hear the selected pack before saving, even with completion sounds disabled |
-| Companion | Enable the optional pixel companion; `M` pets it and `N` changes it |
-| Reading cards | Choose Off, Qur'an, or original reminder quotes |
-| Card timing | Show cards in every block or only breaks, and rotate every 1–60 minutes |
-| Book animation | Toggle the brief animation independently of card content |
-| Automatic starts | Start the next break/focus automatically, or wait for `Space` |
-
-Windows plays synthesized melodies; other platforms use the terminal bell,
-which depends on terminal settings. Reading content is bundled locally.
-Qur'an cards include Arabic, English meaning, and a reference; partial verses
-are labeled as excerpts. See [reading sources](docs/READING.md).
-
-## Keyboard quick reference
-
-| Key | Action |
-| --- | --- |
-| `Space` | Start / pause / resume |
-| `1` / `2` / `3` | Focus / short break / long break |
-| `P` | Choose a preset rhythm |
-| `E` | Edit intentions; `Escape` returns to timer controls |
-| `Ctrl+B` / `F2` | Add task / check or uncheck task while editing |
-| `B` | Focus branches, visit labels, and scope settings |
-| `F` / `R` | Finish/end choices / reset |
-| `H` / `C` | History / Config |
-| `?` | Replay the feature tour while ready or paused |
-| `Ctrl+N` | Explicitly start a new session |
-| `M` / `N` | Pet / change the optional companion |
-| `Q` | Save and quit |
+Write what you intend to do. Notice useful detours. Find your way back.
 
 ## Your data
 
-New installs use `~/.breadcrumbs/breadcrumbs.db` and
-`~/.breadcrumbs/config.json`. Set `BREADCRUMBS_HOME` to choose another directory.
+Sessions and preferences stay locally in `~/.breadcrumbs`. `BREADCRUMBS_HOME`
+chooses another folder. Existing Tlock data and its compatibility command remain usable in place.
 
-Existing Tlock data in `~/.tlock` is reused in place, including `tlock.db`.
-The rename does not move or delete your history. Legacy `TLOCK_HOME` and
-`TLOCK_REPOSITORY` overrides remain supported; the new names take precedence.
-
-Capture is opt-in and runs during running focus/custom blocks. Pause, breaks,
-and quitting stop it. Unselected tab inventories are temporary; exports include
-activity only when you request `--activity`.
-
-The extension sends domains and hashed URL identities, never raw URL paths or
-queries. Plaintext titles are optional. Unverified browser window titles are
-discarded. Hashes identify pages; they are not a guarantee of anonymity.
-
-## Roadmap
-
-Breadcrumbs is the first tool in a planned suite of small terminal productivity
-apps for developers. Each tool should work on its own, share documented local
-data, and make it easier to return to the work.
-
-Next directions: weekly review, editor/project context, better terminal-pane
-integration, and broader desktop support.
+Tracking is optional and runs only during running focus/custom blocks. Pauses,
+breaks and quitting stop it. Normal export omits activity; `--activity` adds it.
+The extension sends domains and URL hashes, not raw paths or queries. Titles
+are optional. Hashes identify pages and are not anonymous. Private/internal
+tabs are excluded by the extension; app-only capture cannot reliably identify
+private windows. [Privacy and capture details](docs/ACTIVITY.md)
 
 ## Contributors welcome
 
-Help us make everyday work easier. New features, useful integrations, simpler
-workflows, bug fixes, documentation, accessibility improvements, and ideas from
-your own routine are welcome. You do not need a big proposal to contribute.
+Help make everyday work easier: small features, integrations, useful workflows,
+bug fixes and clearer docs are welcome. Keep the timer useful on its own and
+integrations optional.
 
-Open an issue with the problem you want to solve, or send a focused pull request.
-Good places to start: editor/terminal integrations, clearer activity context,
-better keyboard access, desktop support, and review/export workflows. Keep the
-simple timer useful on its own and make integrations optional.
+Start with a concrete [good first issue](https://github.com/SaroashDS/Breadcrumbs/issues?q=is%3Aissue%20is%3Aopen%20label%3A%22good%20first%20issue%22)
+or a [help wanted task](https://github.com/SaroashDS/Breadcrumbs/issues?q=is%3Aissue%20is%3Aopen%20label%3A%22help%20wanted%22).
+The [roadmap tickets](docs/CONTRIBUTOR_TASKS.md) cover weekly review, CSV export,
+editor context and broader desktop support. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and checks.
-
-## Development
-
-```powershell
+```sh
 python -m pip install -e ".[dev]"
 python -m pytest -q
-node --test breadcrumbs/assets/browser-extension/tests/worker.test.mjs breadcrumbs/assets/browser-extension/tests/ui.test.mjs
 ```
 
-[QA and real-browser checks](docs/TESTING.md) ·
-[Brand artwork credits](docs/BRANDS.md) ·
-[Architecture and research](docs/FOCUS_BRANCHES.md)
+[Changelog](CHANGELOG.md) · [QA](docs/TESTING.md) ·
+[Architecture](docs/FOCUS_BRANCHES.md) · [Brand credits](docs/BRANDS.md) ·
+[Publishing setup](docs/PUBLISHING.md)
 
 MIT licensed. Brand marks belong to their respective owners.

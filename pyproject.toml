@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "breadcrumbs"
-version = "0.4.3"
+version = "0.4.4"
 description = "A terminal-first productivity timer that keeps your goals in view and helps you understand where you trail off."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -39,3 +39,6 @@ testpaths = ["tests"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["breadcrumbs"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/breadcrumbs", "/tests", "/README.md", "/LICENSE", "/CHANGELOG.md", "/pyproject.toml"]

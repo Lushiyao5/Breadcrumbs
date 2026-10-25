@@ -130,14 +130,14 @@ breadcrumbs update
 
 Normal export omits activity. `--activity` adds observations, annotations,
 scope, and running spans. New data lives in `~/.breadcrumbs`; set
-`BREADCRUMBS_HOME` to choose another directory. Existing `~/.tlock` data and
-legacy overrides remain usable in place; the `tlock` command still works.
+`BREADCRUMBS_HOME` to choose another directory. Existing data and compatibility
+commands remain usable in place.
 
 Tracking is opt-in. Domains and URL hashes leave the extension, not raw URL
 paths/queries; hashes are not anonymous. Titles are optional. The extension
 excludes private/internal tabs; app-only capture cannot reliably identify
 private windows. Pause, breaks, and exit stop capture.
 
-For an upgrade from Tlock, remove the old unpacked extension and load the
-new folder printed by `breadcrumbs browser path`, then pair again. See the
+After updating, reload the unpacked extension. `breadcrumbs browser repair`
+refreshes a previously installed extension folder if needed. See the
 [user guide](USAGE.md) for the full keyboard reference.

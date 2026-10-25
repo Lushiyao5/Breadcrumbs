@@ -31,3 +31,16 @@ that channel; it is not a good immediate launch destination.
 Lead with this idea: **A terminal-first productivity timer that keeps your
 goals in view and helps you understand where you trail off.** Demonstrate the
 timer before the integrations, and include the contributor invitation.
+
+Before sharing, make the first paragraph honest about current support:
+
+> The timer and paired Chrome/Edge extension work on Windows, Linux and macOS.
+> Native foreground-app capture currently supports Windows and Linux/X11;
+> macOS and Wayland native capture are not implemented yet.
+
+Link the short intention → start → detour → trail demo and the current
+[release](https://github.com/SaroashDS/Breadcrumbs/releases/latest), then point
+contributors at [concrete tickets](CONTRIBUTOR_TASKS.md). Do not advertise a
+bare-name PyPI installation until the first real PyPI upload succeeds. The
+released-wheel pipx/uvx commands in [INSTALL.md](INSTALL.md) work without a
+piped script or Git clone.

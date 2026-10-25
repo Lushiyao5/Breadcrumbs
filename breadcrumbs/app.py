@@ -28,6 +28,7 @@ from .timer import TimerEngine, TimerKind, TimerStatus
 from .reading import next_card
 from .onboarding import OnboardingScreen, TOUR_VERSION
 from .widgets import CommandBar, GoalEditor, PixelProgress, ReadingCard, MiniTrail
+from .branding import BreadcrumbsMark
 
 
 class BreadcrumbsApp(App[None]):
@@ -175,6 +176,7 @@ class BreadcrumbsApp(App[None]):
 
     def compose(self) -> ComposeResult:
         with Horizontal(id="brand"):
+            yield BreadcrumbsMark(id="brand-mark")
             yield Static("BREADCRUMBS", id="brand-name")
             yield Static("", id="summary")
         with ScrollableContainer(id="body"):

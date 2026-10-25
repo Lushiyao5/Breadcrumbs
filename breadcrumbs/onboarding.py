@@ -6,6 +6,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Button, Static
 
 from .widgets import CommandBar
+from .branding import logo_text
 
 TOUR_VERSION = 1
 TOUR_STEPS = (
@@ -107,6 +108,7 @@ class OnboardingScreen(ModalScreen[None]):
     #tour-title { height: auto; margin: 1 0; color: #ffd166; text-style: bold; }
     #tour-scroll { height: 1fr; }
     #tour-copy { height: auto; }
+    #tour-logo { height: 10; content-align: center middle; margin-bottom: 1; }
     #tour-actions { height: 3; margin-top: 1; }
     #tour-actions Button { width: 1fr; min-width: 6; margin-right: 1; }
     OnboardingScreen.theme-gameboy #tour-card { background: #1c2a14; }
@@ -122,6 +124,7 @@ class OnboardingScreen(ModalScreen[None]):
             yield Static("", id="tour-progress", markup=False)
             yield Static("", id="tour-title", markup=False)
             with VerticalScroll(id="tour-scroll"):
+                yield Static(logo_text('welcome').copy(), id="tour-logo")
                 yield Static("", id="tour-copy", markup=False)
             with Horizontal(id="tour-actions"):
                 yield Button("Skip", id="tour-skip")
@@ -138,6 +141,7 @@ class OnboardingScreen(ModalScreen[None]):
         self.query_one("#tour-progress", Static).update(f"Feature tour · {self.step + 1} of {len(TOUR_STEPS)}")
         self.query_one("#tour-title", Static).update(title)
         self.query_one("#tour-copy", Static).update(body)
+        self.query_one("#tour-logo", Static).display = self.step == 0
         self.query_one("#tour-back", Button).disabled = self.step == 0
         self.query_one("#tour-next", Button).label = "Let's begin" if self.step == len(TOUR_STEPS) - 1 else "Next"
         self.query_one("#tour-scroll", VerticalScroll).scroll_home(animate=False)

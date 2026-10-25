@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.4 — Bread mark, clearer install, product demos · 2026-10-25
+
+- Add the supplied logo to the README, terminal header and welcome tour.
+  Terminal rendering uses bundled colour data and adds no runtime dependency.
+- Put the core timer/intention/trail pitch, demo GIF and isolated install first.
+  Explain native capture platform limits before users install.
+- Prepare authenticated PyPI publishing and concrete contributor issues.
+  Direct released-wheel installation remains available without Git.
+- Add a music-led launch with prominent branch proof and a comprehensive
+  native-1080p feature guide using real app and extension captures.
+
+
 ## 0.4.3 — Persistent sidebar and safer Windows updates · 2026-10-25
 
 - Keep activity details visible beside the branch list. Arrow keys or a click

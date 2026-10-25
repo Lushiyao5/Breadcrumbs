@@ -5,7 +5,7 @@ opens on first launch; skip with Escape or replay with `?` from a ready/paused
 timer. Reading it does not enable capture or start a block. Recovery takes
 priority over the automatic tour when saved work exists.
 
-`B` opens recorded focus branches in Breadcrumbs v0.4.0. See
+`B` opens recorded focus branches. The details sidebar follows your selection. See
 [activity setup and limits](ACTIVITY.md).
 
 ## A focus block
