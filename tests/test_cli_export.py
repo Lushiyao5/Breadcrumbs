@@ -1,3 +1,5 @@
+import os
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -23,7 +25,7 @@ def read_database(home: Path) -> list[dict]:
     return exported
 
 
-@pytest.mark.parametrize("failure", ["permission", "missing-parent", "directory"])
+@pytest.mark.parametrize("failure", ["create-temp", "missing-parent", "directory"])
 def test_export_write_error_is_actionable_and_preserves_data(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], failure: str
 ) -> None:
@@ -36,14 +38,11 @@ def test_export_write_error_is_actionable_and_preserves_data(
         destination.mkdir()
     else:
         destination.write_text("keep this file", encoding="utf-8")
-        write_text = Path.write_text
 
-        def fail_destination(path: Path, *args, **kwargs):
-            if path == destination:
-                raise PermissionError("access denied")
-            return write_text(path, *args, **kwargs)
+        def fail_mkstemp(*args, **kwargs):
+            raise PermissionError("access denied")
 
-        monkeypatch.setattr(Path, "write_text", fail_destination)
+        monkeypatch.setattr(tempfile, "mkstemp", fail_mkstemp)
 
     monkeypatch.setenv("BREADCRUMBS_HOME", str(home))
     monkeypatch.setattr("sys.argv", ["breadcrumbs", "export", "--output", str(destination)])
@@ -58,11 +57,75 @@ def test_export_write_error_is_actionable_and_preserves_data(
     assert "parent directory exists" in captured.err
     assert "private-session-content" not in captured.err
     assert read_database(home) == before
-    if failure == "permission":
+    assert list(tmp_path.rglob("*.tmp")) == []
+    if failure == "create-temp":
         assert destination.read_text(encoding="utf-8") == "keep this file"
     elif failure == "directory":
         assert destination.is_dir()
         assert list(destination.iterdir()) == []
+
+
+def test_export_partial_write_failure_preserves_existing_destination(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    home = tmp_path / "home"
+    before = prepare_database(home)
+    destination = tmp_path / "export.json"
+    destination.write_text("keep this file", encoding="utf-8")
+    real_fdopen = os.fdopen
+
+    def partially_failing_fdopen(descriptor, *args, **kwargs):
+        handle = real_fdopen(descriptor, *args, **kwargs)
+        real_write = handle.write
+
+        def fail_midway(data):
+            real_write(data[: len(data) // 2])
+            raise OSError("No space left on device")
+
+        handle.write = fail_midway
+        return handle
+
+    monkeypatch.setattr(os, "fdopen", partially_failing_fdopen)
+    monkeypatch.setenv("BREADCRUMBS_HOME", str(home))
+    monkeypatch.setattr("sys.argv", ["breadcrumbs", "export", "--output", str(destination)])
+
+    with pytest.raises(SystemExit) as error:
+        main()
+
+    captured = capsys.readouterr()
+    assert error.value.code == 1
+    assert captured.out == ""
+    assert str(destination) in captured.err
+    assert destination.read_text(encoding="utf-8") == "keep this file"
+    assert list(tmp_path.rglob("*.tmp")) == []
+    assert read_database(home) == before
+
+
+def test_export_replacement_failure_preserves_existing_destination(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    home = tmp_path / "home"
+    before = prepare_database(home)
+    destination = tmp_path / "export.json"
+    destination.write_text("keep this file", encoding="utf-8")
+
+    def fail_replace(source, target):
+        raise PermissionError("destination locked")
+
+    monkeypatch.setattr(os, "replace", fail_replace)
+    monkeypatch.setenv("BREADCRUMBS_HOME", str(home))
+    monkeypatch.setattr("sys.argv", ["breadcrumbs", "export", "--output", str(destination)])
+
+    with pytest.raises(SystemExit) as error:
+        main()
+
+    captured = capsys.readouterr()
+    assert error.value.code == 1
+    assert captured.out == ""
+    assert str(destination) in captured.err
+    assert destination.read_text(encoding="utf-8") == "keep this file"
+    assert list(tmp_path.rglob("*.tmp")) == []
+    assert read_database(home) == before
 
 
 @pytest.mark.parametrize(

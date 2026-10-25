@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
+import tempfile
 from pathlib import Path
 
 
@@ -72,6 +74,26 @@ def handle_update(*, check: bool, status: bool, assume_yes: bool) -> None:
     print(f"Detailed log: {log_path}")
 
 
+def write_export(destination: Path, payload: str) -> None:
+    # Stage the export next to the destination and swap it in only after the
+    # write completes, so a failed write cannot truncate an existing file.
+    temp_path: Path | None = None
+    try:
+        descriptor, temp_name = tempfile.mkstemp(dir=destination.parent, prefix=f".{destination.name}.", suffix=".tmp")
+        temp_path = Path(temp_name)
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(payload + "\n")
+        os.replace(temp_path, destination)
+        temp_path = None
+    except OSError:
+        if temp_path is not None:
+            try:
+                temp_path.unlink()
+            except OSError:
+                pass
+        raise
+
+
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
@@ -117,11 +139,12 @@ def main() -> None:
             database.close()
         if args.output:
             try:
-                args.output.write_text(payload + "\n", encoding="utf-8")
+                write_export(args.output, payload)
             except OSError as exc:
                 print(
                     f"Could not write export to {args.output}: {exc}. "
-                    "Check that the parent directory exists and the destination is writable.",
+                    "Check that the parent directory exists and the destination is writable. "
+                    "An existing destination file is left unchanged.",
                     file=sys.stderr,
                 )
                 raise SystemExit(1) from None
