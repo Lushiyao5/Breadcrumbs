@@ -132,6 +132,12 @@ breadcrumbs export --limit 20
 breadcrumbs export --output activity.json
 ```
 
+If the output path cannot be written, the command prints an error and exits with
+status 1. Create the parent directory or choose a writable destination, then
+retry. The export is staged in a temporary file beside the destination and only
+swapped in after the write completes, so a failed export leaves an existing
+destination file unchanged.
+
 Exports include names, intentions, reflections, ratings, timestamps, timer kind,
 elapsed time, completion status, and completion reason. The database is at
 `~/.breadcrumbs/breadcrumbs.db`. Preferences are at `~/.breadcrumbs/config.json`. `BREADCRUMBS_HOME` changes
