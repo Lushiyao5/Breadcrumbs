@@ -17,10 +17,10 @@ This uses an isolated Python environment and the released wheel. It requires
 neither Git nor a piped shell script. Add pipx's application directory to PATH
 if prompted (`pipx ensurepath`), then reopen your terminal.
 
-PyPI publication is pending. The public PyPI project API returned 404 for
-`breadcrumbs` on 25 October 2026; that is not a reservation or a guarantee that
-PyPI will accept the first upload. We do not advertise `pipx install breadcrumbs`
-until that distribution is actually published. [Maintainer setup](PUBLISHING.md)
+PyPI publication is pending under `breadcrumbst`; the terminal command
+remains `breadcrumbs`. PyPI rejected the original distribution name, so the
+working release-wheel command above remains the recommended install until
+the alternative is published. [Maintainer setup](PUBLISHING.md)
 
 To update this wheel-based install, use the current wheel from the
 [latest GitHub release](https://github.com/SaroashDS/Breadcrumbs/releases/latest):

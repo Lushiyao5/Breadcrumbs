@@ -10,12 +10,12 @@
 </p>
 
 ```sh
-pipx install https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.5/breadcrumbs-0.4.5-py3-none-any.whl
+pipx install https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.6/breadcrumbst-0.4.6-py3-none-any.whl
 ```
 
 Then run `breadcrumbs`. **Python 3.11+** and [pipx](https://pipx.pypa.io/stable/installation/) are required.
 This installs the released wheel in an isolated environment; no shell script or Git clone.
-PyPI publication is pending; the command above installs directly from the GitHub release.
+The wheel installs directly from the GitHub release. [Other install options](docs/INSTALL.md)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/SaroashDS/Breadcrumbs/main/docs/assets/breadcrumbs-demo.gif" width="900" alt="Set an intention, start, and see the branch trail" />
