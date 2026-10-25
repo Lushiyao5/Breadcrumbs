@@ -9,7 +9,7 @@ Windows and Linux/X11; macOS and Wayland native capture are unavailable.
 Install [pipx](https://pipx.pypa.io/stable/installation/) once, then:
 
 ```sh
-pipx install https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.4/breadcrumbs-0.4.4-py3-none-any.whl
+pipx install https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.5/breadcrumbs-0.4.5-py3-none-any.whl
 breadcrumbs
 ```
 
@@ -26,7 +26,7 @@ To update this wheel-based install, use the current wheel from the
 [latest GitHub release](https://github.com/SaroashDS/Breadcrumbs/releases/latest):
 
 ```sh
-pipx install --force https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.4/breadcrumbs-0.4.4-py3-none-any.whl
+pipx install --force https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.5/breadcrumbs-0.4.5-py3-none-any.whl
 ```
 
 Replace the version in the URL when a newer release is available.
@@ -36,7 +36,7 @@ Replace the version in the URL when a newer release is available.
 With [uv installed](https://docs.astral.sh/uv/getting-started/installation/):
 
 ```sh
-uvx --from https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.4/breadcrumbs-0.4.4-py3-none-any.whl breadcrumbs
+uvx --from https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.5/breadcrumbs-0.4.5-py3-none-any.whl breadcrumbs
 ```
 
 uvx manages an isolated cached tool environment. Use the newer wheel URL to
@@ -53,7 +53,7 @@ python -m venv .venv
 source .venv/bin/activate
 # Windows PowerShell instead:
 # .\.venv\Scripts\Activate.ps1
-python -m pip install https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.4/breadcrumbs-0.4.4-py3-none-any.whl
+python -m pip install https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.5/breadcrumbs-0.4.5-py3-none-any.whl
 breadcrumbs
 ```
 

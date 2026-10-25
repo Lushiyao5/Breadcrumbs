@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "breadcrumbs"
-version = "0.4.4"
+version = "0.4.5"
 description = "A terminal-first productivity timer that keeps your goals in view and helps you understand where you trail off."
 readme = "README.md"
 license = { file = "LICENSE" }

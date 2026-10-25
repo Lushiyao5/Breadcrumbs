@@ -1,0 +1,22 @@
+{
+  "file": "breadcrumbs-launch-music.mp4",
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "duration": 35,
+  "bytes": 10757816,
+  "loudness": {
+    "input_i": "-15.22",
+    "input_tp": "-1.45",
+    "input_lra": "2.00",
+    "input_thresh": "-25.27",
+    "output_i": "-15.09",
+    "output_tp": "-1.50",
+    "output_lra": "1.40",
+    "output_thresh": "-25.12",
+    "normalization_type": "dynamic",
+    "target_offset": "0.09"
+  },
+  "decode": "pass",
+  "auditory_review": "not performed; measured only"
+}

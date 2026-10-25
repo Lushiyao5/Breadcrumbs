@@ -381,6 +381,18 @@ class ActivityDetailScreen(ModalScreen[None]):
         self.action_close()
 
 
+class TrailOptionList(OptionList):
+    """Follow the newest visit after wrapped rows change the virtual height."""
+
+    def watch_virtual_size(self):
+        if self.is_mounted:
+            self.call_after_refresh(self._follow_latest_layout)
+
+    def _follow_latest_layout(self):
+        if self.option_count and self.highlighted == self.option_count - 1:
+            self.scroll_end(animate=False)
+
+
 class BranchesScreen(ModalScreen[None]):
     BINDINGS = [
         ("escape", "back", "Back"), ("b", "close", "Close"),
@@ -432,7 +444,7 @@ class BranchesScreen(ModalScreen[None]):
             yield Select(choices, value=value, allow_blank=True, prompt="Choose a focus block", id="branch-session")
             yield Static("", id="branches-note", markup=False)
             with Horizontal(id="branches-body"):
-                yield OptionList(id="trail")
+                yield TrailOptionList(id="trail")
                 with VerticalScroll(id="branch-detail"):
                     yield Static("Activity details", id="branch-detail-heading", markup=False)
                     yield Static("", id="branch-logo")

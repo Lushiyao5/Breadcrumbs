@@ -1,5 +1,4 @@
-# Final storyline choice
-1. SELECTED — Real app in motion. One continuous terminal window, cursor-led close-ups and smooth returns to the full view. The tutorial follows installation instructions through a real first session; the launch accelerates the same workflow into intention → timer → detour → return.
-2. Cost of complexity. A typographic critique of subscriptions and unnecessary agents; not built because the user explicitly rejected slide-based storytelling.
-3. Developer afternoon. A longer narrative about fixing one bug; not built because the user requested a direct tutorial and a snappy launch film.
-Sound: bundled offline click, typing and whoosh accents. No music provider or narration.
+# Current creative choice
+1. SELECTED: one goal, one timer, your trail. Actual product proof builds toward a return to scope; the user's logo and launch command finish it. Supplied 110 BPM music, crisp action effects and beat-led camera motion.
+2. Cost of complexity: a subscription/agent critique through kinetic type. Not selected because actual branch proof gives the product a clearer reason to exist.
+3. Developer afternoon: a longer narrative about a bug fix. Not selected for the launch; the full guide instead uses that concrete task to explain every feature.

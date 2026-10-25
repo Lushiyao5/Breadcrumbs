@@ -9,7 +9,7 @@ work. A simple timer, a clear goal, and an optional trail of apps and browser ta
 No subscription or AI service required.
 
 ```sh
-pipx install https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.4/breadcrumbs-0.4.4-py3-none-any.whl
+pipx install https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.5/breadcrumbs-0.4.5-py3-none-any.whl
 ```
 
 Then run `breadcrumbs`. **Python 3.11+** and [pipx](https://pipx.pypa.io/stable/installation/) are required.
@@ -77,7 +77,7 @@ context stays Unknown. [Setup and limitations](docs/ACTIVITY.md)
 Prefer a one-off run with [uv](https://docs.astral.sh/uv/getting-started/installation/)?
 
 ```sh
-uvx --from https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.4/breadcrumbs-0.4.4-py3-none-any.whl breadcrumbs
+uvx --from https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.5/breadcrumbs-0.4.5-py3-none-any.whl breadcrumbs
 ```
 
 [All installation options](docs/INSTALL.md) cover pipx, uvx, ordinary virtual

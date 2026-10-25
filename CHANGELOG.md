@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.5 — Keep Latest pinned after layout changes · 2026-10-25
+
+- Keep the newest branch entry at the bottom after the terminal resizes or
+  wrapped rows change height. Older selected entries retain their selection.
+- Await screen mounting in the compact timeline regression check, so slow
+  Windows runners verify a mounted view instead of racing its construction.
+- Verify follow behavior through width changes as well as new observations.
+
+
 ## 0.4.4 — Bread mark, clearer install, product demos · 2026-10-25
 
 - Add the supplied logo to the README, terminal header and welcome tour.

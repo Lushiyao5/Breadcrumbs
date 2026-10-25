@@ -138,7 +138,7 @@ def test_latest_follow_preserves_older_selection_and_opens_details_on_small_term
             span = app.database.open_span(sid, 1000)
             for i in range(60):
                 app.database.record_activity(sid, span, Context(f"app-{i}"), "planned" if i % 2 else "unclassified", 1000 + i)
-            app.push_screen(BranchesScreen(app.database, sid))
+            await app.push_screen(BranchesScreen(app.database, sid))
             await pilot.pause()
             screen = app.screen
             trail = screen.query_one("#trail", OptionList)
@@ -151,9 +151,16 @@ def test_latest_follow_preserves_older_selection_and_opens_details_on_small_term
             assert screen._rows[-1]["id"] == last_id
             assert trail.highlighted == trail.option_count - 1
             assert trail.scroll_y == trail.max_scroll_y
+            await pilot.resize_terminal(82, 24)
+            await pilot.pause()
+            assert trail.highlighted == trail.option_count - 1
+            assert trail.scroll_y == trail.max_scroll_y
             trail.highlighted = 10
             await pilot.pause()
             selected = screen._rows[10]["id"]
+            await pilot.resize_terminal(80, 24)
+            await pilot.pause()
+            assert screen._rows[trail.highlighted]["id"] == selected
             app.database.record_activity(sid, span, Context("new-app"), "unclassified", 1061)
             screen._refresh_trail()
             await pilot.pause()

@@ -64,5 +64,5 @@ python -m build
 python -m twine check dist/*
 ```
 
-Existing tags/releases are immutable. Current work targets v0.4.4; do not
+Existing tags/releases are immutable. Current work targets v0.4.5; do not
 recreate the historical v0.4.0 release to retry publishing.
