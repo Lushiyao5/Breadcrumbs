@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import csv
+import io
 import json
 import sqlite3
 import time
@@ -472,6 +474,35 @@ class Database:
 
     def export_json(self, limit: int | None = None, include_activity: bool = False) -> str:
         return json.dumps(self.export(limit, include_activity), indent=2, ensure_ascii=False)
+
+    CSV_SESSION_COLUMNS = (
+        "id",
+        "session_name",
+        "timer_kind",
+        "planned_seconds",
+        "elapsed_seconds",
+        "status",
+        "completion_reason",
+        "started_at",
+        "ended_at",
+        "goal",
+        "actual",
+        "rating",
+    )
+
+    def export_csv(self, limit: int | None = None) -> str:
+        buffer = io.StringIO()
+        writer = csv.DictWriter(
+            buffer,
+            fieldnames=self.CSV_SESSION_COLUMNS,
+            restval="",
+            extrasaction="ignore",
+            lineterminator="\n",
+        )
+        writer.writeheader()
+        for row in self.export(limit):
+            writer.writerow(row)
+        return buffer.getvalue()
 
     def close(self) -> None:
         self.connection.close()
