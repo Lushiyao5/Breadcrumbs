@@ -1,0 +1,10 @@
+- 0s / frame 0: One thing to do; real app behind the hook.
+- 2s / frame 60: Type an intention.
+- 5s / frame 150: Click Start.
+- 7s / frame 210: Timer close-up.
+- 10s / frame 300: Pause and resume.
+- 12s / frame 360: Branch trail.
+- 15s / frame 450: Useful detour details.
+- 17s / frame 510: Return to scope.
+- 18.5s / frame 555: Find your way back.
+- 21s / frame 630: Breadcrumbs wordmark and repository.

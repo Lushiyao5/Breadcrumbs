@@ -1,0 +1,16 @@
+- 0s / frame 0: PowerShell installation instructions.
+- 10s / frame 300: Open the actual app.
+- 14s / frame 420: Type the intention.
+- 18s / frame 540: Type a checklist item.
+- 25s / frame 750: Click Start.
+- 29s / frame 870: Continue without tracking.
+- 36s / frame 1080: Pause.
+- 39s / frame 1170: Resume.
+- 45s / frame 1350: Open branch trail with fixture observations.
+- 49s / frame 1470: Inspect Chrome.
+- 52s / frame 1560: Inspect useful tutorial.
+- 55s / frame 1650: Inspect a deviation.
+- 58s / frame 1740: Back in scope.
+- 65s / frame 1950: Config.
+- 73s / frame 2190: Browser pairing.
+- 80s / frame 2400: Back to work.

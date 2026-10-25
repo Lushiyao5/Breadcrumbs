@@ -1,0 +1,14 @@
+node_modules/
+.hyperframes/
+.media/
+.thumbnails/
+renders/
+review/
+review-*/
+check-*.json
+audio-report.json
+*.log
+preview.png
+recording/*.svg
+recording/*.png
+*.mp4

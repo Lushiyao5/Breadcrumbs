@@ -1,0 +1,8 @@
+# Review
+Creative call: rebuilt after the user rejected the initial slide deck. The final film uses real app interaction frames, a continuous macOS-style window, cursor presses, click rings and animated camera close-ups. The launch compresses the workflow into 28 seconds; the tutorial keeps 88 seconds for instruction reading.
+Checked: HyperFrames lint/runtime/layout/contrast sampled the final composition with no errors. Inspected key camera positions, typing, Start dialog, pause/resume, actual changing branch details, browser pairing and end card. The preview returned HTTP 200 and loaded both full timelines.
+Warnings retained: dense screenshot/overlay tracks are intentional for a continuous recorded interaction. Tutorial holds of 3â€“6 seconds allow reading; its 22px PowerShell window title is decorative chrome, not instructional copy. Tutorial reading overlays are 29px; terminal commands are 32px. Source screenshots use real app text at native resolution and are zoomed for the feature being demonstrated.
+Weakest section: installation shows the documented command being typed and does not record a network download. It avoids invented installer output. Pairing is shown only through the local setup screen; no real browser data or token is revealed.
+Sound: click, typing and whoosh assets only. No music bed or narration. Audio can be measured after rendering but has not been heard.
+
+Final delivery verified: 1920×1080 H.264 at 30fps with AAC stereo; complete file decoded with FFmpeg without errors. Duration: 28s. Audio measured, not heard: {'lufsIntegrated': -30.1, 'lufsShortTermMax': -33, 'samplePeakDb': -13.3, 'truePeakDb': -12.7, 'clipping': {'count': 0, 'firstAt': None}}
