@@ -34,12 +34,14 @@ def repository() -> str:
 
 
 def current_version() -> str:
-    try:
-        return version("breadcrumbs")
-    except PackageNotFoundError:
-        from . import __version__
+    for distribution in ("breadcrumbst", "breadcrumbs"):
+        try:
+            return version(distribution)
+        except PackageNotFoundError:
+            pass
+    from . import __version__
 
-        return __version__
+    return __version__
 
 
 def version_key(value: str) -> tuple[int, ...]:

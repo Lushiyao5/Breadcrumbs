@@ -13,6 +13,15 @@ extension's dependency-free Node tests run in their own CI job. They cover
 scope classification, consent, title redaction, freshness, pairing, inventory,
 navigation hashes, pause, late reports, recovery, and helper cleanup.
 
+A separate `macos-wheel` job builds and installs the wheel into a fresh virtual
+environment on `macos-latest` with Python 3.11. Outside the checkout, it checks
+all CLI aliases, help, bundled branding/extension resources, and a headless
+timer start/pause/resume/quit/recovery lifecycle using temporary local data.
+It does not test native foreground capture, desktop permissions, audio or a
+real macOS browser; native macOS capture remains unsupported. The same check
+can be run with `python -I /path/to/scripts/smoke_installed_package.py` from
+outside the checkout using an environment where the wheel is installed.
+
 The Windows suite also creates a new hidden fixture console, applies a real
 terminal-agent marker through the authenticated bridge, and verifies title
 restoration. It does not attach to the user's existing consoles.

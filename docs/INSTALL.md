@@ -9,38 +9,36 @@ Windows and Linux/X11; macOS and Wayland native capture are unavailable.
 Install [pipx](https://pipx.pypa.io/stable/installation/) once, then:
 
 ```sh
-pipx install https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.5/breadcrumbs-0.4.5-py3-none-any.whl
+pipx install breadcrumbst
 breadcrumbs
 ```
 
-This uses an isolated Python environment and the released wheel. It requires
+This installs `breadcrumbst` from PyPI in an isolated Python environment. It requires
 neither Git nor a piped shell script. Add pipx's application directory to PATH
 if prompted (`pipx ensurepath`), then reopen your terminal.
 
-PyPI publication is pending. The public PyPI project API returned 404 for
-`breadcrumbs` on 25 October 2026; that is not a reservation or a guarantee that
-PyPI will accept the first upload. We do not advertise `pipx install breadcrumbs`
-until that distribution is actually published. [Maintainer setup](PUBLISHING.md)
+The distribution name is `breadcrumbst`; the terminal command remains
+`breadcrumbs`. [Maintainer publishing setup](PUBLISHING.md)
 
-To update this wheel-based install, use the current wheel from the
-[latest GitHub release](https://github.com/SaroashDS/Breadcrumbs/releases/latest):
+To update:
 
 ```sh
-pipx install --force https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.5/breadcrumbs-0.4.5-py3-none-any.whl
+pipx upgrade breadcrumbst
 ```
 
-Replace the version in the URL when a newer release is available.
+Versioned wheels are also available from the
+[GitHub releases](https://github.com/SaroashDS/Breadcrumbs/releases/latest).
 
 ## Run with uvx
 
 With [uv installed](https://docs.astral.sh/uv/getting-started/installation/):
 
 ```sh
-uvx --from https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.5/breadcrumbs-0.4.5-py3-none-any.whl breadcrumbs
+uvx breadcrumbst
 ```
 
-uvx manages an isolated cached tool environment. Use the newer wheel URL to
-run a new release. Keep using uv/uvx to manage that environment rather than
+uvx manages an isolated cached tool environment. Use `uvx --refresh breadcrumbst`
+to refresh it. Keep using uv/uvx to manage that environment rather than
 the app's pip-based background updater.
 
 ## Ordinary Python virtual environment
@@ -53,7 +51,7 @@ python -m venv .venv
 source .venv/bin/activate
 # Windows PowerShell instead:
 # .\.venv\Scripts\Activate.ps1
-python -m pip install https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.5/breadcrumbs-0.4.5-py3-none-any.whl
+python -m pip install breadcrumbst
 breadcrumbs
 ```
 

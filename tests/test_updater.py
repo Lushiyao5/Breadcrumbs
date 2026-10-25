@@ -13,6 +13,24 @@ class FakeResponse(io.BytesIO):
         self.close()
 
 
+def test_version_prefers_timer_distribution_and_supports_legacy(monkeypatch):
+    def lookup(name):
+        if name == "breadcrumbst":
+            return "0.4.6"
+        return "0.4.5"
+
+    monkeypatch.setattr(updater, "version", lookup)
+    assert updater.current_version() == "0.4.6"
+
+    def legacy(name):
+        if name == "breadcrumbst":
+            raise updater.PackageNotFoundError(name)
+        return "0.4.5"
+
+    monkeypatch.setattr(updater, "version", legacy)
+    assert updater.current_version() == "0.4.5"
+
+
 def test_latest_release_and_version_comparison(monkeypatch) -> None:
     payload = {
         "tag_name": "v0.5.0",

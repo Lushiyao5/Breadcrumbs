@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.6 — PyPI distribution identity · 2026-10-25
+
+- Publish under `breadcrumbst` because PyPI rejects the original package name.
+  The product, Python imports, settings and main `breadcrumbs` command retain
+  their existing names. `breadcrumbst` is an additional command for direct uvx use.
+- Detect the new distribution's installed version before legacy metadata.
+- Configure the PyPI trusted-publisher target for the accepted project name.
+
+
 ## 0.4.5 — Keep Latest pinned after layout changes · 2026-10-25
 
 - Keep the newest branch entry at the bottom after the terminal resizes or
@@ -17,8 +26,7 @@
   Explain native capture platform limits before users install.
 - Prepare authenticated PyPI publishing and concrete contributor issues.
   Direct released-wheel installation remains available without Git.
-- Add a music-led launch with prominent branch proof and a comprehensive
-  native-1080p feature guide using real app and extension captures.
+- Add a short README GIF using real intention, timer and branch captures.
 
 
 ## 0.4.3 — Persistent sidebar and safer Windows updates · 2026-10-25

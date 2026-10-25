@@ -1,22 +1,25 @@
-# Breadcrumbs
+<p align="center">
+  <img src="https://raw.githubusercontent.com/SaroashDS/Breadcrumbs/main/docs/assets/breadcrumbs-mark-transparent.png" width="220" alt="Breadcrumbs bread-and-trail mark" />
+</p>
 
-<img src="https://raw.githubusercontent.com/SaroashDS/Breadcrumbs/main/docs/assets/breadcrumbs-logo.png" width="140" align="right" alt="Breadcrumbs pixel bread-and-trail logo" />
+<h1 align="center">Breadcrumbs</h1>
 
-**A terminal-first timer that helps you understand where you trail off.**
-
-Write an intention, start a focus block, and follow your attention back to the
-work. A simple timer, a clear goal, and an optional trail of apps and browser tabs.
-No subscription or AI service required.
+<p align="center">
+  <strong>Local-first, no account. A terminal-first productivity timer.</strong><br />
+  Keep your goals in view and understand where your attention trails off.
+</p>
 
 ```sh
-pipx install https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.5/breadcrumbs-0.4.5-py3-none-any.whl
+pipx install breadcrumbst
 ```
 
 Then run `breadcrumbs`. **Python 3.11+** and [pipx](https://pipx.pypa.io/stable/installation/) are required.
-This installs the released wheel in an isolated environment; no shell script or Git clone.
-PyPI publication is pending; the command above installs directly from the GitHub release.
+The PyPI package is `breadcrumbst`; the command is `breadcrumbs`.
+No shell script or Git clone. [Other install options](docs/INSTALL.md)
 
-![Set an intention, start, switch away, and see the branch trail](https://raw.githubusercontent.com/SaroashDS/Breadcrumbs/main/docs/assets/breadcrumbs-demo.gif)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/SaroashDS/Breadcrumbs/main/docs/assets/breadcrumbs-demo.gif" width="900" alt="Set an intention, start, and see the branch trail" />
+</p>
 
 **Platform support:** timer + paired Chrome/Edge work on Windows, Linux and macOS.
 Native foreground-app capture supports **Windows and Linux/X11 only**.
@@ -77,7 +80,7 @@ context stays Unknown. [Setup and limitations](docs/ACTIVITY.md)
 Prefer a one-off run with [uv](https://docs.astral.sh/uv/getting-started/installation/)?
 
 ```sh
-uvx --from https://github.com/SaroashDS/Breadcrumbs/releases/download/v0.4.5/breadcrumbs-0.4.5-py3-none-any.whl breadcrumbs
+uvx breadcrumbst
 ```
 
 [All installation options](docs/INSTALL.md) cover pipx, uvx, ordinary virtual

@@ -7,9 +7,6 @@ const {resolve, join} = require('node:path');
 const assert = require('node:assert/strict');
 
 async function main() {
-  const videoDir=process.env.BREADCRUMBS_VIDEO_CAPTURE;
-  if(videoDir)require('node:fs').mkdirSync(videoDir,{recursive:true});
-  const capture=async(page,name)=>{if(videoDir)await page.locator('main').screenshot({path:join(videoDir,name+'.png')});};
   const pythonPath = process.env.BREADCRUMBS_TEST_PYTHON || resolve(process.platform === 'win32' ? '.venv/Scripts/python.exe' : '.venv/bin/python');
   const python = spawn(pythonPath, ['-X', 'utf8', 'scripts/browser_e2e_host.py'], {stdio: ['pipe','pipe','inherit']});
   const exited = new Promise(resolve=>python.once('exit', resolve));
@@ -26,7 +23,7 @@ async function main() {
     const extension = resolve('breadcrumbs/assets/browser-extension');
     const profile = mkdtempSync(resolve('.build-check/browser-e2e-'));
     context = await chromium.launchPersistentContext(profile, {
-      channel: 'chromium', headless: true, deviceScaleFactor:videoDir?3:1,
+      channel: 'chromium', headless: true,
       args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`]
     });
     await context.route('https://docs.python.org/**', route => route.fulfill({contentType:'text/html', body:'<title>Python docs fixture</title><h1>Docs</h1>'}));
@@ -53,7 +50,6 @@ async function main() {
       throw new Error('Pairing failed: '+JSON.stringify({ui,probe}));
     }
     console.log('Pairing passed');
-    await capture(popup,'extension-paired');
     assert.equal(await popup.locator('#token').inputValue(), '');
     const docs = await context.newPage();
     await docs.goto('https://docs.python.org/3/?fixture=private');
@@ -147,16 +143,13 @@ async function main() {
     await popup.waitForFunction(()=>document.querySelector('#status').textContent==='Sharing stopped');
     console.log('Passed: popup reopen detects active session while sharing stays stopped');
     await popup.waitForFunction(()=>document.querySelector('#timer-primary').textContent==='Pause' && !document.querySelector('#timer-primary').disabled);
-    await capture(popup,'extension-running');
     await popup.locator('#timer-primary').click();
     result = await until(value=>value.timer_status==='paused', 'pause timer from extension with sharing stopped');
     await popup.waitForFunction(()=>document.querySelector('#timer-primary').textContent==='Resume' && !document.querySelector('#timer-primary').disabled);
-    await capture(popup,'extension-paused');
     await popup.locator('#timer-primary').click();
     result = await until(value=>value.timer_status==='running', 'resume timer from extension');
     await popup.waitForFunction(()=>document.querySelector('#timer-finish').disabled===false);
     await popup.locator('#timer-finish').click();
-    await capture(popup,'extension-finish-confirm');
     await popup.locator('#timer-cancel').click();
     assert.equal((await inspect()).timer_status,'running');
     await popup.locator('#timer-finish').click();
@@ -171,7 +164,6 @@ async function main() {
     await popup.waitForFunction(()=>document.querySelector('#timer-state').textContent==='RUNNING' && document.querySelector('#timer-primary').textContent==='Pause' && !document.querySelector('#timer-primary').disabled);
     await popup.setViewportSize({width:400,height:900});
     await popup.locator('main').screenshot({path:'docs/assets/browser-extension.png'});
-    await capture(popup,'extension-next-block');
     await popup.locator('#disconnect').click();
     await popup.waitForFunction(()=>document.querySelector('#status').textContent==='Not paired');
     const storage = await worker.evaluate(()=>chrome.storage.local.get(['token','endpoint','enabled']));

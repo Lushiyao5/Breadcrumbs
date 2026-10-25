@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "breadcrumbs"
-version = "0.4.5"
+name = "breadcrumbst"
+version = "0.4.6"
 description = "A terminal-first productivity timer that keeps your goals in view and helps you understand where you trail off."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -32,6 +32,7 @@ dev = ["pytest>=8.0"]
 
 [project.scripts]
 breadcrumbs = "breadcrumbs.__main__:main"
+breadcrumbst = "breadcrumbs.__main__:main"
 tlock = "breadcrumbs.__main__:legacy_main"
 
 [tool.pytest.ini_options]
