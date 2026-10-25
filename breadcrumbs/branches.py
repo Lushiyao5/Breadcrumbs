@@ -390,7 +390,7 @@ class TrailOptionList(OptionList):
 
     def _follow_latest_layout(self):
         if self.option_count and self.highlighted == self.option_count - 1:
-            self.scroll_end(animate=False)
+            self.scroll_end(animate=False, immediate=True)
 
 
 class BranchesScreen(ModalScreen[None]):
@@ -460,7 +460,7 @@ class BranchesScreen(ModalScreen[None]):
         self.set_class(self.size.height < 32, "short")
         selected = self.query_one("#branch-session", Select).value
         self.session_id = int(selected) if selected is not Select.BLANK else None
-        self._refresh_trail()
+        self._refresh_trail(initial=True)
         self.call_after_refresh(self._refresh_trail)
         self.set_interval(1.0, self._refresh_trail)
         self.query_one("#trail", OptionList).focus()
@@ -473,6 +473,8 @@ class BranchesScreen(ModalScreen[None]):
 
     def on_select_changed(self, event: Select.Changed):
         if event.select.id == "branch-session":
+            if event.value != event.select.value:
+                return  # Ignore an older queued selection after the current value changed.
             chosen = int(event.value) if event.value is not Select.BLANK else None
             if chosen != self.session_id:
                 self.session_id = chosen
@@ -480,8 +482,8 @@ class BranchesScreen(ModalScreen[None]):
                 self.query_one("#trail", OptionList).clear_options()
                 self._refresh_trail()
 
-    def _refresh_trail(self):
-        if not self.is_mounted or not len(self.query("#trail")):
+    def _refresh_trail(self, initial: bool = False):
+        if (not initial and not self.is_mounted) or not len(self.query("#trail")):
             return
         previous_rows = self._rows
         self._rows = self.database.session_trail(self.session_id) if self.session_id else []
@@ -530,7 +532,7 @@ class BranchesScreen(ModalScreen[None]):
     def _scroll_latest(self):
         options = self.query_one("#trail", OptionList)
         if options.highlighted == options.option_count - 1:
-            options.scroll_end(animate=False)
+            options.scroll_end(animate=False, immediate=True)
 
     def _keep_selection_visible(self):
         options = self.query_one("#trail", OptionList)
