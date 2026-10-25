@@ -1,0 +1,60 @@
+name: Artifact compatibility smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          mkdir -p fixture/package fixture/notes
+          printf 'synthetic wheel payload\n' > fixture/package/sample.whl
+          printf 'synthetic source payload\n' > fixture/package/sample.tar.gz
+          printf 'synthetic release notes\n' > fixture/notes/release.md
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: old-package
+          path: fixture/package/
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: new-package
+          path: fixture/package/
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: new-notes
+          path: fixture/notes/release.md
+
+  download:
+    needs: upload
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: old-package
+          path: old-to-new/
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: new-package
+          path: new-to-old/
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: new-package
+          path: new-to-new/
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: new-notes
+          path: notes/
+      - name: Verify bytes and release directory layout without executing artifacts
+        run: |
+          printf 'synthetic wheel payload\n' > expected-wheel
+          printf 'synthetic source payload\n' > expected-source
+          printf 'synthetic release notes\n' > expected-notes
+          for directory in old-to-new new-to-old new-to-new; do
+            cmp expected-wheel "$directory/sample.whl"
+            cmp expected-source "$directory/sample.tar.gz"
+          done
+          cmp expected-notes notes/release.md
