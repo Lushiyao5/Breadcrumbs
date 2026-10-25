@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 
@@ -115,8 +116,17 @@ def main() -> None:
         finally:
             database.close()
         if args.output:
-            args.output.write_text(payload + "\n", encoding="utf-8")
-            print(f"Exported activity to {args.output}")
+            try:
+                args.output.write_text(payload + "\n", encoding="utf-8")
+            except OSError as exc:
+                print(
+                    f"Could not write export to {args.output}: {exc}. "
+                    "Check that the parent directory exists and the destination is writable.",
+                    file=sys.stderr,
+                )
+                raise SystemExit(1) from None
+            exported = "session and activity data" if args.activity else "session data"
+            print(f"Exported {exported} to {args.output}")
         else:
             print(payload)
         return
