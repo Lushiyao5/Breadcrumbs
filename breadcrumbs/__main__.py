@@ -19,10 +19,11 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("sessions", help="List resumable saved blocks")
     browser = subparsers.add_parser("browser", help="Set up the bundled browser extension")
     browser.add_argument("action", choices=("path", "setup", "repair"), default="setup", nargs="?")
-    export = subparsers.add_parser("export", help="Export local activity as JSON")
+    export = subparsers.add_parser("export", help="Export local activity as JSON or CSV")
     export.add_argument("--limit", type=int, default=None)
     export.add_argument("--output", type=Path, default=None)
     export.add_argument("--activity", action="store_true", help="Explicitly include recorded focus context and spans")
+    export.add_argument("--format", choices=("json", "csv"), default="json", help="csv exports session summaries only")
     update = subparsers.add_parser("update", help="Update Breadcrumbs from its latest GitHub release")
     mode = update.add_mutually_exclusive_group()
     mode.add_argument("--check", action="store_true", help="Check without installing")
@@ -132,14 +133,22 @@ def main() -> None:
     if args.command == "export":
         from .db import Database
 
+        if args.format == "csv" and args.activity:
+            parser.error("--format csv exports session summaries only; drop --activity or use JSON output.")
         database = Database()
         try:
-            payload = database.export_json(args.limit, include_activity=args.activity)
+            if args.format == "csv":
+                payload = database.export_csv(args.limit)
+            else:
+                payload = database.export_json(args.limit, include_activity=args.activity)
         finally:
             database.close()
         if args.output:
             try:
-                write_export(args.output, payload)
+                # write_export terminates the file with a single newline; the CSV
+                # writer already ends its payload with one, so strip it first to
+                # avoid a blank final row.
+                write_export(args.output, payload.rstrip("\n"))
             except OSError as exc:
                 print(
                     f"Could not write export to {args.output}: {exc}. "
@@ -151,7 +160,10 @@ def main() -> None:
             exported = "session and activity data" if args.activity else "session data"
             print(f"Exported {exported} to {args.output}")
         else:
-            print(payload)
+            if args.format == "csv":
+                print(payload, end="")
+            else:
+                print(payload)
         return
 
     from .app import BreadcrumbsApp

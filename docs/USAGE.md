@@ -130,6 +130,7 @@ today, using the machine's local date. Breaks are excluded.
 breadcrumbs export
 breadcrumbs export --limit 20
 breadcrumbs export --output activity.json
+breadcrumbs export --format csv --output sessions.csv
 ```
 
 If the output path cannot be written, the command prints an error and exits with
@@ -142,6 +143,12 @@ Exports include names, intentions, reflections, ratings, timestamps, timer kind,
 elapsed time, completion status, and completion reason. The database is at
 `~/.breadcrumbs/breadcrumbs.db`. Preferences are at `~/.breadcrumbs/config.json`. `BREADCRUMBS_HOME` changes
 the data directory.
+
+`--format csv` writes one row per session with the same summary fields, using
+Python's CSV quoting, so commas, quotes, newlines and Unicode round-trip in
+spreadsheet apps. CSV never flattens activity or focus context: those stay in
+JSON output, and `--format csv --activity` is rejected instead of dropping data
+silently. `--limit`, stdout and `--output` behave the same in both formats.
 
 Long-break progress uses plain wording: only full
 Focus timers advance the round; custom timers and early finishes do not.

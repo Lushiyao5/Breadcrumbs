@@ -55,3 +55,39 @@ def test_goal_checklist_can_be_updated_while_running(tmp_path: Path) -> None:
 
     assert database.recent(1)[0]["goal"] == "- [x] Draft\n- [ ] Review"
     database.close()
+
+
+def test_export_csv_covers_session_summary_columns(tmp_path: Path) -> None:
+    import csv
+    import io
+
+    database = Database(tmp_path / "test.db")
+    session_id = database.begin_session("focus", 1500, "Ship the timer")
+    database.finish_session(session_id, 900, "early")
+    database.add_reflection(session_id, "停下来总结", 3)
+
+    payload = database.export_csv()
+    database.close()
+
+    rows = list(csv.reader(io.StringIO(payload)))
+    header = rows[0]
+    assert header == list(Database.CSV_SESSION_COLUMNS)
+    row = dict(zip(header, rows[1]))
+    assert row["goal"] == "Ship the timer"
+    assert row["actual"] == "停下来总结"
+    assert row["rating"] == "3"
+    assert row["status"] == "completed"
+    assert row["completion_reason"] == "early"
+    assert row["elapsed_seconds"] == "900"
+
+
+def test_export_csv_empty_database_writes_header_only(tmp_path: Path) -> None:
+    import csv
+    import io
+
+    database = Database(tmp_path / "test.db")
+    payload = database.export_csv()
+    database.close()
+
+    rows = list(csv.reader(io.StringIO(payload)))
+    assert rows == [list(Database.CSV_SESSION_COLUMNS)]
