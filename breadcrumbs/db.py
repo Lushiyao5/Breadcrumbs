@@ -451,15 +451,21 @@ class Database:
         ).fetchone()
         return {"seconds": int(row["seconds"]), "blocks": int(row["blocks"])}
 
-    def week_bounds(self, anchor: date) -> tuple[datetime, datetime]:
-        """Return the local-time Monday 00:00 and next Monday 00:00 around anchor."""
-        local_monday = anchor - timedelta(days=anchor.weekday())
-        start = datetime.combine(local_monday, datetime.min.time()).astimezone()
-        end = datetime.combine(local_monday + timedelta(days=7), datetime.min.time()).astimezone()
-        return start, end
+    def week_bounds(self, anchor: date, tz: timezone | None = None) -> tuple[datetime, datetime]:
+        """Return the local-time Monday 00:00 and next Monday 00:00 around anchor.
 
-    def weekly_review(self, anchor: date, include_activity: bool = False) -> dict[str, Any]:
-        start, end = self.week_bounds(anchor)
+        ``tz`` defaults to the machine's local timezone; pass an explicit
+        timezone (e.g. a DST-observing one) for deterministic boundary checks.
+        """
+        local_monday = anchor - timedelta(days=anchor.weekday())
+        start = datetime.combine(local_monday, datetime.min.time())
+        end = datetime.combine(local_monday + timedelta(days=7), datetime.min.time())
+        if tz is None:
+            return start.astimezone(), end.astimezone()
+        return start.replace(tzinfo=tz), end.replace(tzinfo=tz)
+
+    def weekly_review(self, anchor: date, include_activity: bool = False, tz: timezone | None = None) -> dict[str, Any]:
+        start, end = self.week_bounds(anchor, tz)
         start_iso = start.astimezone(timezone.utc).isoformat(timespec="seconds")
         end_iso = end.astimezone(timezone.utc).isoformat(timespec="seconds")
         rows = [dict(row) for row in self.connection.execute(
@@ -496,7 +502,8 @@ class Database:
         }
         if include_activity:
             labels: dict[str, int] = {}
-            for row in rows:
+            # Break work never contributes activity seconds.
+            for row in work:
                 for interval in self.activity_for(row["id"]):
                     label = (interval.get("annotation") or "").strip() or interval.get("classification") or "unlabelled"
                     labels[label] = labels.get(label, 0) + int(round(interval["ended_at"] - interval["started_at"]))

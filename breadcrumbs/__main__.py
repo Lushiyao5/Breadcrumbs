@@ -151,9 +151,8 @@ def main() -> None:
         finally:
             database.close()
         print(f"Week of {summary['week_start'][:10]} to {summary['week_end'][:10]}")
-        if summary["completed"] == 0:
+        if summary["completed"] == 0 and summary["blocks"] == 0:
             print("No completed work this week.")
-            return
         print(f"Work: {summary['seconds'] // 60}m across {summary['completed']} completed blocks")
         print(
             f"Blocks started: {summary['blocks']}"
