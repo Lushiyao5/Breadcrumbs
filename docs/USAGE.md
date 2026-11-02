@@ -29,10 +29,9 @@ block, its short break, the next focus block. Work blocks and breaks keep the
 same session name, including after reopening the app, so the history reads as
 one sitting rather than as loose timers.
 
-That split is what makes `--resume` and the weekly review useful: `--resume`
-reopens a specific block by its session name, while the review totals every
-block that shares a name. To start a fresh run instead of continuing one, press
-`Ctrl+N` or edit the name before the next block.
+Use `--resume NAME` to reopen saved work by its session name. To start a fresh
+run instead of continuing one, press `Ctrl+N` or edit the name before the next
+block.
 
 Choose Focus, Short, Long, or a custom duration, then press `Space`. New focus
 and custom blocks ask you to choose a scope, reuse the previous scope, or
@@ -72,7 +71,9 @@ breadcrumbs --name thesis-chapter-3
 # list what is resumable, then reopen that run
 breadcrumbs sessions
 breadcrumbs --resume thesis-chapter-3
-``` Time spent outside Breadcrumbs is not counted as work. A sudden
+```
+
+Time spent outside Breadcrumbs is not counted as work. A sudden
 shutdown may lose roughly the final second of timer progress.
 
 ## Presets and early finishes
