@@ -332,7 +332,10 @@ def test_export_and_browser_help_explain_defaults_and_examples():
 
     browser_help = browser.format_help()
     assert "path prints the extension folder" in browser_help
-    assert "repair reinstalls it" in browser_help
+    assert "repair refreshes" in browser_help
+    assert "outdated legacy folders on Windows" in " ".join(browser_help.split())
+    assert "does not install a missing extension" in " ".join(browser_help.split())
+    assert "reinstalls" not in browser_help
     assert "breadcrumbs browser setup" in browser_help
 
     # The flags and their defaults keep working as before.

@@ -22,7 +22,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="Set up the bundled browser extension",
         description=(
             "Work with the bundled browser extension: 'path' prints the folder to load, "
-            "'setup' explains how to load it, 'repair' reinstalls it."
+            "'setup' explains how to load it, and 'repair' refreshes outdated known legacy "
+            "unpacked-extension folders on Windows. Repair does not install a missing "
+            "extension into Chrome or Edge."
         ),
         epilog=(
             "Examples:\n"
@@ -37,7 +39,10 @@ def build_parser() -> argparse.ArgumentParser:
         choices=("path", "setup", "repair"),
         default="setup",
         nargs="?",
-        help="path prints the extension folder, setup explains loading it, repair reinstalls it (default: setup)",
+        help=(
+            "path prints the extension folder, setup explains loading it, repair refreshes "
+            "outdated legacy folders on Windows (default: setup)"
+        ),
     )
     export = subparsers.add_parser(
         "export",
