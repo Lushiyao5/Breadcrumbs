@@ -106,6 +106,10 @@ class Database:
                CREATE TABLE IF NOT EXISTS pomodoro_state (
                    id INTEGER PRIMARY KEY CHECK (id = 1),
                    completed INTEGER NOT NULL DEFAULT 0
+               );
+               CREATE TABLE IF NOT EXISTS break_banks (
+                   session_root INTEGER PRIMARY KEY REFERENCES sessions(id) ON DELETE CASCADE,
+                   banked_seconds INTEGER NOT NULL DEFAULT 0 CHECK (banked_seconds >= 0)
                );"""
         )
         span_columns = {row["name"] for row in self.connection.execute("PRAGMA table_info(session_spans)")}
@@ -345,6 +349,39 @@ class Database:
     def pomodoro_progress(self) -> int:
         row = self.connection.execute("SELECT completed FROM pomodoro_state WHERE id = 1").fetchone()
         return int(row[0])
+
+    def break_bank(self, session_root: int | None) -> int:
+        """Banked break seconds saved for the named session; 0 without one."""
+        if session_root is None:
+            return 0
+        row = self.connection.execute(
+            "SELECT banked_seconds FROM break_banks WHERE session_root = ?", (session_root,)
+        ).fetchone()
+        return int(row[0]) if row else 0
+
+    def bank_break(self, session_root: int | None, seconds: int) -> int:
+        """Add a skipped break's duration to the named session's bank."""
+        if session_root is None or seconds <= 0:
+            return self.break_bank(session_root)
+        self.connection.execute(
+            """INSERT INTO break_banks(session_root, banked_seconds) VALUES (?, ?)
+               ON CONFLICT(session_root) DO UPDATE SET
+               banked_seconds = banked_seconds + excluded.banked_seconds""",
+            (session_root, int(seconds)),
+        )
+        self.connection.commit()
+        return self.break_bank(session_root)
+
+    def spend_break_bank(self, session_root: int | None, seconds: int) -> int:
+        """Deduct bank time once when a combined break starts; never negative."""
+        if session_root is None or seconds <= 0:
+            return self.break_bank(session_root)
+        self.connection.execute(
+            "UPDATE break_banks SET banked_seconds = MAX(0, banked_seconds - ?) WHERE session_root = ?",
+            (int(seconds), session_root),
+        )
+        self.connection.commit()
+        return self.break_bank(session_root)
 
     def recoverable(self, name: str | None = None) -> list[dict[str, Any]]:
         sql = """SELECT s.*, c.remaining_seconds, c.timer_status, c.saved_at
