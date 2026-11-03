@@ -1,9 +1,12 @@
 """Deterministic tests for the break bank: skipping a due break saves its
 time for a combined break after the next work stretch (issue #25)."""
 import asyncio
+import sqlite3
 import time
 
-from textual.widgets import Static
+import pytest
+
+from textual.widgets import Input, Static
 
 from breadcrumbs.app import BreadcrumbsApp
 from breadcrumbs.db import Database
@@ -14,6 +17,32 @@ def _expire_running_timer(app) -> None:
     """Force the running block to complete on the next tick."""
     app.timer._deadline = time.monotonic() - 1
     app._tick()
+
+
+def test_combined_break_start_and_bank_spend_are_one_transaction(tmp_path):
+    path = tmp_path / "atomic-bank.db"
+    db = Database(path)
+    root = db.begin_session("focus", 1500, "goal", "atomic")
+    db.bank_break(root, 600)
+    db.connection.execute("""CREATE TEMP TRIGGER fail_bank_spend
+        BEFORE UPDATE ON break_banks BEGIN
+        SELECT RAISE(ABORT, 'bank unavailable'); END""")
+    with pytest.raises(sqlite3.IntegrityError, match="bank unavailable"):
+        db.begin_session("short_break", 600, "goal", session_root=root,
+                         break_bank_seconds=300)
+    assert db.connection.execute("SELECT COUNT(*) FROM sessions").fetchone()[0] == 1
+    assert db.connection.execute("SELECT COUNT(*) FROM checkpoints").fetchone()[0] == 1
+    assert db.break_bank(root) == 600
+    assert not db.connection.in_transaction
+    db.connection.execute("DROP TRIGGER fail_bank_spend")
+    block = db.begin_session("short_break", 600, "goal", session_root=root,
+                             break_bank_seconds=300)
+    db.close()
+    db = Database(path)
+    assert db.break_bank(root) == 300
+    assert db.session_identity(block)[0] == root
+    assert next(row for row in db.recoverable() if row["id"] == block)["planned_seconds"] == 600
+    db.close()
 
 
 async def _complete_focus_block(app, pilot) -> None:
@@ -103,7 +132,7 @@ def test_combined_break_is_offered_and_spends_the_bank_once(tmp_path, monkeypatc
     asyncio.run(exercise())
 
 
-def test_deferring_the_combined_break_banks_the_whole_break(tmp_path, monkeypatch):
+def test_deferring_the_combined_break_only_banks_new_credit(tmp_path, monkeypatch):
     monkeypatch.setenv("BREADCRUMBS_HOME", str(tmp_path))
 
     async def exercise():
@@ -120,7 +149,7 @@ def test_deferring_the_combined_break_banks_the_whole_break(tmp_path, monkeypatc
             await _complete_focus_block(app, pilot)
             assert app.timer.duration_seconds == 2 * short
             app.action_skip_break()  # defer the combined break too
-            assert app.database.break_bank(root) == 3 * short
+            assert app.database.break_bank(root) == 2 * short
             assert app.timer.kind is TimerKind.FOCUS
 
     asyncio.run(exercise())
@@ -207,6 +236,31 @@ def test_explicit_new_session_starts_with_an_empty_bank(tmp_path, monkeypatch):
             assert app.banked_seconds == 0
             assert app.database.break_bank(root) == short  # the old session keeps its bank
 
+    asyncio.run(exercise())
+
+
+def test_renaming_before_a_combined_break_keeps_credit_in_old_session(tmp_path, monkeypatch):
+    monkeypatch.setenv("BREADCRUMBS_HOME", str(tmp_path))
+
+    async def exercise():
+        app = BreadcrumbsApp(session_name="bank-run")
+        app.settings.sound_enabled = False
+        app.settings.browser_bridge_port = 0
+        async with app.run_test(size=(110, 40)) as pilot:
+            app._begin_block()
+            root = app._session_root
+            await _complete_focus_block(app, pilot)
+            short = app.settings.short_break_minutes * 60
+            app.action_skip_break()
+            app._begin_block()
+            await _complete_focus_block(app, pilot)
+            assert app.timer.duration_seconds == 2 * short
+            app.query_one("#session-name", Input).value = "new-bank-run"
+            app._begin_block()
+            assert app.timer.duration_seconds == short
+            assert app._session_root != root
+            assert app.banked_seconds == 0
+            assert app.database.break_bank(root) == short
     asyncio.run(exercise())
 
 

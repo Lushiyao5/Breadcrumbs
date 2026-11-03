@@ -588,8 +588,17 @@ class BreadcrumbsApp(App[None]):
                     raw_name = self._home_query("#session-name", Input).value.strip()
                     chosen = normalize_name(raw_name) if raw_name else self.session_name
                     root = self._session_root if chosen == self.session_name else None
+                    planned_seconds = self.timer.duration_seconds
+                    bank_spend = 0
+                    if self.timer.kind in (TimerKind.SHORT_BREAK, TimerKind.LONG_BREAK):
+                        bank_spend = max(0, self.timer.duration_seconds - self._duration_for(self.timer.kind))
+                        if root is None and bank_spend:
+                            # A new named session cannot use the old session's credit.
+                            planned_seconds = self._duration_for(self.timer.kind)
+                            bank_spend = 0
                     self.active_session_id = self.database.begin_session(
-                        self.timer.kind.value, self.timer.duration_seconds, goal, chosen, session_root=root
+                        self.timer.kind.value, planned_seconds, goal, chosen, session_root=root,
+                        break_bank_seconds=bank_spend
                     )
                     self._session_root, self.session_name = self.database.session_identity(self.active_session_id)
                     self.database.remember_session(self._session_root)
@@ -600,12 +609,9 @@ class BreadcrumbsApp(App[None]):
                 except sqlite3.IntegrityError:
                     self.notify("That session name is already used. Choose another name.", severity="error")
                     return
+                if planned_seconds != self.timer.duration_seconds:
+                    self.timer.configure(planned_seconds, self.timer.kind)
                 self._reload_break_bank()
-                if self.timer.kind in (TimerKind.SHORT_BREAK, TimerKind.LONG_BREAK):
-                    extra = self.timer.duration_seconds - self._duration_for(self.timer.kind)
-                    if extra > 0:
-                        # The offered break included banked time; spend it once on start.
-                        self.banked_seconds = self.database.spend_break_bank(self._session_root, extra)
             self.timer.start()
         elif self.timer.status is TimerStatus.RUNNING:
             self.timer.pause()
@@ -632,7 +638,9 @@ class BreadcrumbsApp(App[None]):
                 or self.timer.status is not TimerStatus.READY
                 or self._session_root is None):
             return
-        self.banked_seconds = self.database.bank_break(self._session_root, self.timer.duration_seconds)
+        # A combined offer already includes the bank; only the new break is credit.
+        credit = min(self.timer.duration_seconds, self._duration_for(self.timer.kind))
+        self.banked_seconds = self.database.bank_break(self._session_root, credit)
         self._select(TimerKind.FOCUS)
         self.notify(f"Break banked · {_clock_text(self.banked_seconds)} saved for a later break",
                     title="BREAK BANK")

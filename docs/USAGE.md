@@ -71,15 +71,16 @@ do with it:
 When a break is due but you want to keep working, press `S` to skip it and bank
 its time. Banking is explicit, works only on a break that has not been started,
 and stays inside the current named session. A skipped break is not recorded as a
-completed break or as work.
+completed break or as work. Keep Auto-start breaks disabled to bank a due break;
+an already-started break cannot be banked.
 
 The hint line under the progress bar shows how much break time is banked. After
 your next completed focus block, the offered break lasts the normal break plus
 everything banked, and the clock shows the combined duration. Start it with
 `Space` to spend the banked minutes — the bank is deducted once, when the
-combined break actually starts — or press `S` again to bank the combined break
-and keep working. Pressing `2` or `3` selects the normal break duration instead
-and leaves the bank untouched.
+combined break actually starts — or press `S` again to defer it and add only the
+new normal break duration, keeping previously banked time once. Pressing `2` or
+`3` selects the normal break duration instead and leaves the bank untouched.
 
 Banking a long break does not reset the long-break round: the round stays due
 until a long break is actually completed, and the next offered break is that

@@ -129,7 +129,7 @@ class Database:
         self.connection.commit()
 
     def begin_session(self, timer_kind: str, planned_seconds: int, goal: str, name: str | None = None,
-                      session_root: int | None = None) -> int:
+                      session_root: int | None = None, *, break_bank_seconds: int = 0) -> int:
         if session_root is not None:
             root = self.connection.execute("SELECT id FROM sessions WHERE id = ? AND session_root = id", (session_root,)).fetchone()
             if root is None:
@@ -137,19 +137,24 @@ class Database:
             name = self.new_session_name()  # Internal block recovery identity; session name stays on the root.
         else:
             name = normalize_name(name) if name else self.new_session_name()
-        cursor = self.connection.execute(
-            """INSERT INTO sessions
-               (timer_kind, planned_seconds, goal, started_at, name, status)
-               VALUES (?, ?, ?, ?, ?, 'running')""",
-            (timer_kind, planned_seconds, goal.strip(), utc_now(), name),
-        )
-        self.connection.execute(
-            "INSERT INTO checkpoints VALUES (?, ?, 'running', ?)",
-            (cursor.lastrowid, planned_seconds, utc_now()),
-        )
-        self.connection.execute("UPDATE sessions SET session_root = ? WHERE id = ?",
-                                (session_root or cursor.lastrowid, cursor.lastrowid))
-        self.connection.commit()
+        with self.connection:
+            cursor = self.connection.execute(
+                """INSERT INTO sessions
+                   (timer_kind, planned_seconds, goal, started_at, name, status)
+                   VALUES (?, ?, ?, ?, ?, 'running')""",
+                (timer_kind, planned_seconds, goal.strip(), utc_now(), name),
+            )
+            self.connection.execute(
+                "INSERT INTO checkpoints VALUES (?, ?, 'running', ?)",
+                (cursor.lastrowid, planned_seconds, utc_now()),
+            )
+            self.connection.execute("UPDATE sessions SET session_root = ? WHERE id = ?",
+                                    (session_root or cursor.lastrowid, cursor.lastrowid))
+            if session_root is not None and break_bank_seconds > 0:
+                self.connection.execute(
+                    "UPDATE break_banks SET banked_seconds = MAX(0, banked_seconds - ?) WHERE session_root = ?",
+                    (int(break_bank_seconds), session_root),
+                )
         return int(cursor.lastrowid)
 
     def session_identity(self, block_id: int) -> tuple[int, str]:
